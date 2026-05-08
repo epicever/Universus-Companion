@@ -2,41 +2,22 @@ const STORAGE_KEY = "universus-companion-state-v1";
 
 const defaultState = {
   players: {
-    p1: {
-      name: "Player 1",
-      life: 35,
-      maxLife: 35,
-      counter: 0
-    },
-    p2: {
-      name: "Player 2",
-      life: 35,
-      maxLife: 35,
-      counter: 0
-    }
+    p1: { name: "Player 1", life: 35, maxLife: 35, counter: 0 },
+    p2: { name: "Player 2", life: 35, maxLife: 35, counter: 0 }
   },
   turnPlayer: "p1",
-  attack: {
-    baseDamage: 0,
-    baseSpeed: 0,
-    location: "mid"
-  },
-  continuous: {
-    damageBonus: 0,
-    speedBonus: 0
-  },
-  meta: {
-    lastDamage: null,
-    lastHitPlayer: null
-  }
+  attack: { baseDamage: 0, baseSpeed: 0, location: "mid" },
+  continuous: { damageBonus: 0, speedBonus: 0 },
+  meta: { lastDamage: null, lastHitPlayer: null }
 };
 
-const locationLabels = {
-  high: "High",
-  mid: "Mid",
-  low: "Low"
+const uiState = {
+  p1OpenControl: null,
+  p2OpenControl: null
 };
 
+const controlNames = ["life", "counter", "damage", "speed", "location", "continuous", "maxLife"];
+const locationLabels = { high: "High", mid: "Mid", low: "Low" };
 const blockTable = {
   high: { high: "full", mid: "half", low: "none" },
   mid: { high: "half", mid: "full", low: "half" },
@@ -55,8 +36,6 @@ const playerMounts = {
 const hud = {
   finalDamage: document.querySelector("#final-damage"),
   finalSpeed: document.querySelector("#final-speed"),
-  damageFormula: document.querySelector("#damage-formula"),
-  speedFormula: document.querySelector("#speed-formula"),
   attackLocation: document.querySelector("#attack-location"),
   locationCore: document.querySelector("#location-core"),
   turnIndicator: document.querySelector("#turn-indicator"),
@@ -75,6 +54,7 @@ function loadState() {
 
 function sanitizeState(nextState) {
   const merged = structuredClone(defaultState);
+
   if (nextState?.players) {
     ["p1", "p2"].forEach((playerId) => {
       merged.players[playerId] = {
@@ -159,76 +139,128 @@ function render() {
 function renderHud() {
   const finalDamage = getFinalDamage();
   const finalSpeed = getFinalSpeed();
-  const attacker = state.players[state.turnPlayer];
   const location = state.attack.location;
+  const attacker = state.players[state.turnPlayer];
 
   hud.finalDamage.textContent = finalDamage;
   hud.finalSpeed.textContent = finalSpeed;
-  hud.damageFormula.textContent = `${state.attack.baseDamage} + ${state.continuous.damageBonus}`;
-  hud.speedFormula.textContent = `${state.attack.baseSpeed} + ${state.continuous.speedBonus}`;
   hud.attackLocation.textContent = locationLabels[location];
-  hud.locationCore.className = `location-core ${location}`;
+  hud.locationCore.className = `combat-chip location-core ${location}`;
   hud.turnIndicator.textContent = `${attacker.name} attacking`;
 
   if (state.meta.lastDamage) {
     const target = state.players[state.meta.lastDamage.defenderId]?.name || "Defender";
-    hud.lastDamage.textContent = `${target} took ${state.meta.lastDamage.damageTaken} (${state.meta.lastDamage.blockQuality} block, ${state.meta.lastDamage.blockedAmount} blocked)`;
+    hud.lastDamage.textContent = `${target}: ${state.meta.lastDamage.damageTaken} dmg • ${state.meta.lastDamage.blockedAmount} blocked`;
   } else {
-    hud.lastDamage.textContent = "No damage dealt yet";
+    hud.lastDamage.textContent = "No damage yet";
   }
 }
 
 function renderPlayer(playerId) {
-  const mount = playerMounts[playerId];
-  mount.innerHTML = "";
-
-  const fragment = playerTemplate.content.cloneNode(true);
-  const card = fragment.querySelector(".player-card");
   const player = state.players[playerId];
   const isAttacker = state.turnPlayer === playerId;
+  const fragment = playerTemplate.content.cloneNode(true);
+  const panel = fragment.querySelector(".player-panel");
+  const playerName = fragment.querySelector(".player-name");
+  const roleBadge = fragment.querySelector(".role-badge");
+  const content = fragment.querySelector(".player-content");
 
-  card.dataset.player = playerId;
-  fragment.querySelector(".player-name").value = player.name;
-  fragment.querySelector(".role-badge").textContent = isAttacker ? "Attacking" : "Defending";
-  fragment.querySelector(".role-badge").classList.toggle("defending", !isAttacker);
-  fragment.querySelector(".life-value").textContent = player.life;
-  fragment.querySelector(".max-life-readout").textContent = `/ ${player.maxLife}`;
-  fragment.querySelector(".counter-value").textContent = player.counter;
-  fragment.querySelector(".max-life-input").value = player.maxLife;
+  panel.dataset.player = playerId;
+  panel.classList.toggle("is-attacker", isAttacker);
+  playerName.value = player.name;
+  roleBadge.textContent = isAttacker ? "Attacking" : "Defending";
+  roleBadge.classList.toggle("defending", !isAttacker);
 
-  const rolePanel = fragment.querySelector(".role-panel");
-  rolePanel.innerHTML = isAttacker ? getAttackerControls() : getDefenderControls();
+  content.innerHTML = `
+    <div class="compact-grid core-grid">
+      ${statAccordion(playerId, "life", "Life", `${player.life} / ${player.maxLife}`, lifeControls())}
+      ${statAccordion(playerId, "counter", "Counter", player.counter, stepperControls("counter-dec", "counter-inc", "Counter"))}
+      ${statAccordion(playerId, "maxLife", "Max", player.maxLife, maxLifeControls(player.maxLife))}
+    </div>
+    ${isAttacker ? attackerPanel(playerId) : defenderPanel()}
+  `;
 
-  mount.appendChild(fragment);
+  playerMounts[playerId].innerHTML = "";
+  playerMounts[playerId].appendChild(fragment);
 }
 
-function getAttackerControls() {
+function attackerPanel(playerId) {
   return `
-    <section class="attack-controls" aria-label="Attacking player controls">
-      ${controlCard("Base Damage", state.attack.baseDamage, "base-damage-dec", "base-damage-inc")}
-      ${controlCard("Base Speed", state.attack.baseSpeed, "base-speed-dec", "base-speed-inc")}
-      <div class="location-card">
-        <header><h3>Attack Location</h3><span class="control-value">${locationLabels[state.attack.location]}</span></header>
-        <div class="location-grid">
-          ${locationButton("high", "High")}
-          ${locationButton("mid", "Mid")}
-          ${locationButton("low", "Low")}
-        </div>
-      </div>
-      ${controlCard("Continuous Damage", state.continuous.damageBonus, "cont-damage-dec", "cont-damage-inc")}
-      ${controlCard("Continuous Speed", state.continuous.speedBonus, "cont-speed-dec", "cont-speed-inc")}
-    </section>
+    <div class="compact-grid attack-grid">
+      ${statAccordion(playerId, "damage", "Damage", getFinalDamage(), stepperControls("base-damage-dec", "base-damage-inc", "Damage"))}
+      ${statAccordion(playerId, "location", "Location", locationLabels[state.attack.location], locationControls())}
+      ${statAccordion(playerId, "speed", "Speed", getFinalSpeed(), stepperControls("base-speed-dec", "base-speed-inc", "Speed"))}
+    </div>
+    <div class="compact-grid bonus-grid">
+      ${statAccordion(playerId, "continuous", "Continuous", `D ${formatSigned(state.continuous.damageBonus)} / S ${formatSigned(state.continuous.speedBonus)}`, continuousControls())}
+    </div>
   `;
 }
 
-function controlCard(label, value, decAction, incAction) {
+function defenderPanel() {
   return `
-    <div class="control-card">
-      <header><h3>${label}</h3><span class="control-value">${value}</span></header>
-      <div class="control-stepper">
-        <button class="control-btn" data-action="${decAction}" aria-label="Decrease ${label}">−</button>
-        <button class="control-btn" data-action="${incAction}" aria-label="Increase ${label}">+</button>
+    <div class="block-row" aria-label="Defending player block controls">
+      <button class="block-btn loc-high" data-action="block" data-location="high">High Block</button>
+      <button class="block-btn loc-mid" data-action="block" data-location="mid">Mid Block</button>
+      <button class="block-btn loc-low" data-action="block" data-location="low">Low Block</button>
+    </div>
+  `;
+}
+
+function statAccordion(playerId, controlName, label, value, controlsMarkup) {
+  const isOpen = uiState[`${playerId}OpenControl`] === controlName;
+  return `
+    <div class="stat-accordion ${isOpen ? "open" : ""}" data-control="${controlName}">
+      <button class="stat-card" data-action="toggle-control" data-control="${controlName}" aria-expanded="${isOpen}">
+        <span>${label}</span>
+        <strong>${value}</strong>
+      </button>
+      <div class="accordion-body" aria-hidden="${!isOpen}">
+        <div class="accordion-inner">${controlsMarkup}</div>
       </div>
+    </div>
+  `;
+}
+
+function stepperControls(decAction, incAction, label) {
+  return `
+    <div class="control-strip two-up">
+      <button class="control-btn" data-action="${decAction}" aria-label="Decrease ${label}">−1</button>
+      <button class="control-btn" data-action="${incAction}" aria-label="Increase ${label}">+1</button>
+    </div>
+  `;
+}
+
+function lifeControls() {
+  return stepperControls("life-dec", "life-inc", "Life");
+}
+
+function maxLifeControls(maxLife) {
+  return `
+    <div class="control-strip max-life-controls">
+      <input class="input input-bordered input-sm max-life-input" type="number" min="1" max="999" inputmode="numeric" value="${maxLife}" aria-label="Max life" />
+      <button class="control-btn set-btn" data-action="set-max-life">Set</button>
+    </div>
+  `;
+}
+
+function continuousControls() {
+  return `
+    <div class="control-strip four-up">
+      <button class="control-btn" data-action="cont-damage-dec">D−</button>
+      <button class="control-btn" data-action="cont-damage-inc">D+</button>
+      <button class="control-btn" data-action="cont-speed-dec">S−</button>
+      <button class="control-btn" data-action="cont-speed-inc">S+</button>
+    </div>
+  `;
+}
+
+function locationControls() {
+  return `
+    <div class="control-strip three-up">
+      ${locationButton("high", "High")}
+      ${locationButton("mid", "Mid")}
+      ${locationButton("low", "Low")}
     </div>
   `;
 }
@@ -238,36 +270,45 @@ function locationButton(location, label) {
   return `<button class="control-btn location-btn loc-${location} ${active}" data-action="set-location" data-location="${location}">${label}</button>`;
 }
 
-function getDefenderControls() {
-  return `
-    <section class="block-controls" aria-label="Defending player block controls">
-      <button class="block-btn loc-high" data-action="block" data-location="high">High Block</button>
-      <button class="block-btn loc-mid" data-action="block" data-location="mid">Mid Block</button>
-      <button class="block-btn loc-low" data-action="block" data-location="low">Low Block</button>
-    </section>
-  `;
-}
-
 function animatePendingHit() {
   if (!pendingHitPlayer) return;
-  const card = playerMounts[pendingHitPlayer]?.querySelector(".player-card");
-  if (card) {
-    card.classList.remove("hit-flash");
-    requestAnimationFrame(() => card.classList.add("hit-flash"));
+  const panel = playerMounts[pendingHitPlayer]?.querySelector(".player-panel");
+  if (panel) {
+    panel.classList.remove("hit-flash");
+    requestAnimationFrame(() => panel.classList.add("hit-flash"));
   }
   pendingHitPlayer = null;
 }
 
-// ---------- Actions ----------
-function handleAction(action, button) {
-  const playerId = button.closest(".player-card")?.dataset.player;
+// ---------- UI accordion actions ----------
+function toggleControl(playerId, controlName) {
+  if (!playerId || !controlNames.includes(controlName)) return;
+  const key = `${playerId}OpenControl`;
+  uiState[key] = uiState[key] === controlName ? null : controlName;
+  render();
+}
+
+function closeAllControls() {
+  uiState.p1OpenControl = null;
+  uiState.p2OpenControl = null;
+}
+
+function closePlayerControls(playerId) {
+  if (!playerId) return;
+  uiState[`${playerId}OpenControl`] = null;
+}
+
+// ---------- Game actions ----------
+function handleAction(action, element) {
+  const playerId = element.closest(".player-panel")?.dataset.player;
 
   const actions = {
+    "toggle-control": () => toggleControl(playerId, element.dataset.control),
     "life-inc": () => changePlayerValue(playerId, "life", 1, 0, 999),
     "life-dec": () => changePlayerValue(playerId, "life", -1, 0, 999),
     "counter-inc": () => changePlayerValue(playerId, "counter", 1, -999, 999),
     "counter-dec": () => changePlayerValue(playerId, "counter", -1, -999, 999),
-    "set-max-life": () => setMaxLife(playerId, button),
+    "set-max-life": () => setMaxLife(playerId, element),
     "base-damage-inc": () => changeAttackValue("baseDamage", 1),
     "base-damage-dec": () => changeAttackValue("baseDamage", -1),
     "base-speed-inc": () => changeAttackValue("baseSpeed", 1),
@@ -276,8 +317,8 @@ function handleAction(action, button) {
     "cont-damage-dec": () => changeContinuousValue("damageBonus", -1),
     "cont-speed-inc": () => changeContinuousValue("speedBonus", 1),
     "cont-speed-dec": () => changeContinuousValue("speedBonus", -1),
-    "set-location": () => setAttackLocation(button.dataset.location),
-    block: () => applyBlock(button.dataset.location),
+    "set-location": () => setAttackLocation(element.dataset.location),
+    block: () => applyBlock(element.dataset.location),
     "end-turn": endTurn,
     "reset-game": resetGame
   };
@@ -292,9 +333,9 @@ function changePlayerValue(playerId, key, delta, min, max) {
   });
 }
 
-function setMaxLife(playerId, button) {
+function setMaxLife(playerId, element) {
   if (!playerId) return;
-  const input = button.closest(".max-life-row").querySelector(".max-life-input");
+  const input = element.closest(".accordion-inner").querySelector(".max-life-input");
   const maxLife = clampNumber(input.value, 1, 999);
 
   updateState((nextState) => {
@@ -328,6 +369,7 @@ function applyBlock(blockLocation) {
   const result = getBlockResult(blockLocation);
 
   pendingHitPlayer = defenderId;
+  closePlayerControls(defenderId);
 
   updateState((nextState) => {
     nextState.players[defenderId].life = Math.max(0, nextState.players[defenderId].life - result.damageTaken);
@@ -340,6 +382,7 @@ function applyBlock(blockLocation) {
 }
 
 function endTurn() {
+  closeAllControls();
   updateState((nextState) => {
     resetAttackValues(nextState);
     nextState.continuous.damageBonus = 0;
@@ -350,6 +393,7 @@ function endTurn() {
 }
 
 function resetGame() {
+  closeAllControls();
   updateState((nextState) => {
     ["p1", "p2"].forEach((playerId) => {
       nextState.players[playerId].life = nextState.players[playerId].maxLife;
@@ -376,17 +420,20 @@ function clampNumber(value, min, max) {
   return Math.min(max, Math.max(min, parsed));
 }
 
+function formatSigned(value) {
+  return value >= 0 ? `+${value}` : String(value);
+}
+
 // ---------- Event delegation ----------
 document.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-action]");
-  if (!button) return;
-  handleAction(button.dataset.action, button);
+  const actionable = event.target.closest("[data-action]");
+  if (!actionable) return;
+  handleAction(actionable.dataset.action, actionable);
 });
-
 
 document.addEventListener("input", (event) => {
   if (!event.target.matches(".player-name")) return;
-  const playerId = event.target.closest(".player-card")?.dataset.player;
+  const playerId = event.target.closest(".player-panel")?.dataset.player;
   if (!playerId) return;
 
   state.players[playerId].name = event.target.value.slice(0, 24);
@@ -395,13 +442,13 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("change", (event) => {
-  if (event.target.matches(".player-name")) {
-    const playerId = event.target.closest(".player-card")?.dataset.player;
-    if (!playerId) return;
-    updateState((nextState) => {
-      nextState.players[playerId].name = event.target.value.trim() || defaultState.players[playerId].name;
-    });
-  }
+  if (!event.target.matches(".player-name")) return;
+  const playerId = event.target.closest(".player-panel")?.dataset.player;
+  if (!playerId) return;
+
+  updateState((nextState) => {
+    nextState.players[playerId].name = event.target.value.trim() || defaultState.players[playerId].name;
+  });
 });
 
 document.addEventListener("keydown", (event) => {
