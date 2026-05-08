@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Universus Companion - a premium two-player tabletop life and attack tracker." />
+    <title>Universus Companion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "ui-sans-serif", "system-ui"]
+            }
+          }
+        }
+      };
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.24/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell" aria-label="Universus Companion game tracker">
+      <section id="player-p2" class="player-zone top-player" aria-label="Player 2 panel"></section>
+
+      <section class="center-hud" aria-label="Current attack and game actions">
+        <div class="hud-card glass-card">
+          <div class="hud-header">
+            <div>
+              <p class="eyebrow">Universus Companion</p>
+              <h1 class="title-gradient">Combat HUD</h1>
+            </div>
+            <div id="turn-indicator" class="turn-pill"></div>
+          </div>
+
+          <div class="attack-readout" id="attack-readout">
+            <div class="readout-stat damage-stat">
+              <span class="stat-label">Damage</span>
+              <strong id="final-damage">0</strong>
+              <small id="damage-formula">0 + 0</small>
+            </div>
+            <div class="location-core" id="location-core">
+              <span id="attack-location">Mid</span>
+              <small>Location</small>
+            </div>
+            <div class="readout-stat speed-stat">
+              <span class="stat-label">Speed</span>
+              <strong id="final-speed">0</strong>
+              <small id="speed-formula">0 + 0</small>
+            </div>
+          </div>
+
+          <div id="last-damage" class="last-damage">No damage dealt yet</div>
+
+          <div class="hud-actions">
+            <button class="btn btn-primary action-glow" data-action="end-turn">End Turn</button>
+            <button class="btn btn-ghost danger-outline" data-action="reset-game">Reset Game</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="player-p1" class="player-zone bottom-player" aria-label="Player 1 panel"></section>
+    </main>
+
+    <template id="player-template">
+      <article class="player-card glass-card">
+        <div class="player-main">
+          <header class="player-header">
+            <div class="name-stack">
+              <label class="sr-only">Player name</label>
+              <input class="player-name input input-ghost" data-field="name" maxlength="24" />
+              <span class="role-badge"></span>
+            </div>
+            <div class="counter-box">
+              <span>Counter</span>
+              <strong class="counter-value">0</strong>
+              <div class="mini-stepper">
+                <button class="btn btn-xs" data-action="counter-dec">−</button>
+                <button class="btn btn-xs" data-action="counter-inc">+</button>
+              </div>
+            </div>
+          </header>
+
+          <section class="life-module" aria-label="Life controls">
+            <button class="life-btn minus" data-action="life-dec" aria-label="Decrease life">−</button>
+            <div class="life-core">
+              <span class="life-label">Life</span>
+              <strong class="life-value">35</strong>
+              <span class="max-life-readout">/ 35</span>
+            </div>
+            <button class="life-btn plus" data-action="life-inc" aria-label="Increase life">+</button>
+          </section>
+
+          <section class="max-life-row" aria-label="Max life controls">
+            <label>Max Life</label>
+            <input class="input input-bordered input-sm max-life-input" data-field="maxLife" type="number" min="1" max="999" inputmode="numeric" />
+            <button class="btn btn-sm btn-accent" data-action="set-max-life">Set</button>
+          </section>
+        </div>
+
+        <div class="role-panel"></div>
+      </article>
+    </template>
+
+    <script src="script.js"></script>
+  </body>
+</html>
