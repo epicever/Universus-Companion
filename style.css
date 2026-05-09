@@ -95,20 +95,30 @@ input {
   border-radius: clamp(1rem, 2vw, 1.55rem);
 }
 
-.player-panel::before {
+.player-panel::before,
+.player-panel::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -2;
-  background-image: linear-gradient(90deg, rgba(2, 6, 23, 0.3), rgba(2, 6, 23, 0.84)), var(--player-image);
-  background-position: center;
-  background-size: cover;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.player-panel::before {
+  background-image: var(--player-image);
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: auto 100%;
   opacity: 0;
   transition: opacity 180ms ease;
 }
 
+.player-panel::after {
+  background: linear-gradient(90deg, rgba(2, 6, 23, 0.22), rgba(2, 6, 23, 0.86) 58%, rgba(2, 6, 23, 0.72));
+}
+
 .player-panel.has-image::before {
-  opacity: 0.42;
+  opacity: 0.62;
 }
 
 .player-panel > * {
@@ -424,23 +434,27 @@ input {
 }
 
 .combat-bar {
-  transform-origin: center;
-  transition: transform 180ms ease;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(10rem, 1fr) auto;
+  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
   grid-template-areas:
-    "brand readout actions"
+    "p2 brand p1"
+    "p2 actions p1"
     "last last last";
   align-items: center;
-  gap: 0.4rem 0.55rem;
+  gap: 0.35rem 0.55rem;
   width: min(100%, 62rem);
   justify-self: center;
   border-radius: 1.25rem;
-  padding: 0.55rem 0.7rem;
+  padding: 0.5rem 0.65rem;
 }
 
-.combat-bar.attacker-p2 {
+.combat-readout-p2 {
+  grid-area: p2;
   transform: rotate(180deg);
+}
+
+.combat-readout-p1 {
+  grid-area: p1;
 }
 
 .brand-line {
@@ -471,12 +485,14 @@ input {
 }
 
 .combat-readout {
-  grid-area: readout;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
 }
 
 .combat-chip {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
@@ -498,16 +514,10 @@ input {
 
 .combat-chip strong {
   justify-self: end;
-  font-size: clamp(1.35rem, 3.3vw, 2.2rem);
+  font-size: clamp(1.25rem, 3vw, 2rem);
   font-weight: 1000;
   letter-spacing: -0.06em;
   line-height: 1;
-}
-
-.combat-chip .shared-readout {
-  justify-self: start;
-  transform: rotate(180deg);
-  opacity: 0.92;
 }
 
 .center-actions {
@@ -662,10 +672,10 @@ input {
   }
 
   .combat-bar {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     grid-template-areas:
-      "readout actions"
-      "brand brand";
+      "p2 actions p1"
+      "brand brand brand";
     gap: 0.22rem 0.28rem;
     max-height: 18dvh;
     padding: 0.25rem 0.35rem;
@@ -688,6 +698,10 @@ input {
     display: none;
   }
 
+  .combat-readout {
+    gap: 0.18rem;
+  }
+
   .combat-chip {
     min-height: 2.08rem;
     border-radius: 0.7rem;
@@ -700,10 +714,6 @@ input {
 
   .combat-chip strong {
     font-size: 1.05rem;
-  }
-
-  .combat-chip .shared-readout {
-    font-size: 0.86rem;
   }
 
   .center-actions {
@@ -794,10 +804,6 @@ input {
 
   .combat-chip {
     min-height: 1.75rem;
-  }
-
-  .combat-chip .shared-readout {
-    font-size: 0.72rem;
   }
 
   .center-actions .btn {

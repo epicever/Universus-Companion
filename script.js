@@ -8,7 +8,7 @@ const defaultState = {
   turnPlayer: "p1",
   attack: { baseDamage: 0, baseSpeed: 0, location: "mid" },
   continuous: { damageBonus: 0, speedBonus: 0 },
-  meta: { lastDamage: null, lastHitPlayer: null }
+  meta: { lastDamage: null, lastHitPlayer: null, healthDefaultVersion: 30 }
 };
 
 const uiState = {
@@ -35,13 +35,10 @@ const playerMounts = {
 
 const hud = {
   combatBar: document.querySelector("#combat-bar"),
-  finalDamage: document.querySelector("#final-damage"),
-  finalDamageShared: document.querySelector("#final-damage-shared"),
-  finalSpeed: document.querySelector("#final-speed"),
-  finalSpeedShared: document.querySelector("#final-speed-shared"),
-  attackLocation: document.querySelector("#attack-location"),
-  attackLocationShared: document.querySelector("#attack-location-shared"),
-  locationCore: document.querySelector("#location-core"),
+  damageReadouts: document.querySelectorAll('[data-attack-field="damage"]'),
+  speedReadouts: document.querySelectorAll('[data-attack-field="speed"]'),
+  locationReadouts: document.querySelectorAll('[data-attack-field="location"]'),
+  locationChips: document.querySelectorAll("[data-location-chip]"),
   turnIndicator: document.querySelector("#turn-indicator"),
   lastDamage: document.querySelector("#last-damage")
 };
@@ -75,6 +72,10 @@ function sanitizeState(nextState) {
 
   ["p1", "p2"].forEach((playerId) => {
     const player = merged.players[playerId];
+    if (nextState?.meta?.healthDefaultVersion !== 30 && player.maxLife === 35 && player.life === 35) {
+      player.maxLife = 30;
+      player.life = 30;
+    }
     player.maxLife = clampNumber(player.maxLife, 1, 999);
     player.life = clampNumber(player.life, 0, 999);
     player.counter = clampNumber(player.counter, -999, 999);
@@ -149,13 +150,18 @@ function renderHud() {
 
   hud.combatBar.classList.toggle("attacker-p2", state.turnPlayer === "p2");
   hud.combatBar.classList.toggle("attacker-p1", state.turnPlayer === "p1");
-  hud.finalDamage.textContent = finalDamage;
-  hud.finalDamageShared.textContent = finalDamage;
-  hud.finalSpeed.textContent = finalSpeed;
-  hud.finalSpeedShared.textContent = finalSpeed;
-  hud.attackLocation.textContent = locationLabels[location];
-  hud.attackLocationShared.textContent = locationLabels[location];
-  hud.locationCore.className = `combat-chip location-core ${location}`;
+  hud.damageReadouts.forEach((readout) => {
+    readout.textContent = finalDamage;
+  });
+  hud.speedReadouts.forEach((readout) => {
+    readout.textContent = finalSpeed;
+  });
+  hud.locationReadouts.forEach((readout) => {
+    readout.textContent = locationLabels[location];
+  });
+  hud.locationChips.forEach((chip) => {
+    chip.className = `combat-chip location-core ${location}`;
+  });
   hud.turnIndicator.textContent = `${attacker.name} attacking`;
 
   if (state.meta.lastDamage) {
