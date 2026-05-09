@@ -2,8 +2,8 @@ const STORAGE_KEY = "universus-companion-state-v1";
 
 const defaultState = {
   players: {
-    p1: { name: "Player 1", life: 35, maxLife: 35, counter: 0 },
-    p2: { name: "Player 2", life: 35, maxLife: 35, counter: 0 }
+    p1: { name: "Player 1", life: 30, maxLife: 30, counter: 0, image: null },
+    p2: { name: "Player 2", life: 30, maxLife: 30, counter: 0, image: null }
   },
   turnPlayer: "p1",
   attack: { baseDamage: 0, baseSpeed: 0, location: "mid" },
@@ -34,9 +34,13 @@ const playerMounts = {
 };
 
 const hud = {
+  combatBar: document.querySelector("#combat-bar"),
   finalDamage: document.querySelector("#final-damage"),
+  finalDamageShared: document.querySelector("#final-damage-shared"),
   finalSpeed: document.querySelector("#final-speed"),
+  finalSpeedShared: document.querySelector("#final-speed-shared"),
   attackLocation: document.querySelector("#attack-location"),
+  attackLocationShared: document.querySelector("#attack-location-shared"),
   locationCore: document.querySelector("#location-core"),
   turnIndicator: document.querySelector("#turn-indicator"),
   lastDamage: document.querySelector("#last-damage")
@@ -75,6 +79,7 @@ function sanitizeState(nextState) {
     player.life = clampNumber(player.life, 0, 999);
     player.counter = clampNumber(player.counter, -999, 999);
     player.name = String(player.name || defaultState.players[playerId].name).slice(0, 24);
+    player.image = typeof player.image === "string" && player.image.startsWith("data:image/") ? player.image : null;
   });
 
   merged.attack.baseDamage = clampNumber(merged.attack.baseDamage, -99, 999);
@@ -142,9 +147,14 @@ function renderHud() {
   const location = state.attack.location;
   const attacker = state.players[state.turnPlayer];
 
+  hud.combatBar.classList.toggle("attacker-p2", state.turnPlayer === "p2");
+  hud.combatBar.classList.toggle("attacker-p1", state.turnPlayer === "p1");
   hud.finalDamage.textContent = finalDamage;
+  hud.finalDamageShared.textContent = finalDamage;
   hud.finalSpeed.textContent = finalSpeed;
+  hud.finalSpeedShared.textContent = finalSpeed;
   hud.attackLocation.textContent = locationLabels[location];
+  hud.attackLocationShared.textContent = locationLabels[location];
   hud.locationCore.className = `combat-chip location-core ${location}`;
   hud.turnIndicator.textContent = `${attacker.name} attacking`;
 
@@ -162,11 +172,20 @@ function renderPlayer(playerId) {
   const fragment = playerTemplate.content.cloneNode(true);
   const panel = fragment.querySelector(".player-panel");
   const playerName = fragment.querySelector(".player-name");
+  const avatarThumb = fragment.querySelector(".avatar-thumb");
   const roleBadge = fragment.querySelector(".role-badge");
   const content = fragment.querySelector(".player-content");
 
   panel.dataset.player = playerId;
   panel.classList.toggle("is-attacker", isAttacker);
+  panel.classList.toggle("has-image", Boolean(player.image));
+  if (player.image) {
+    panel.style.setProperty("--player-image", `url("${player.image}")`);
+    avatarThumb.style.backgroundImage = `url("${player.image}")`;
+  } else {
+    panel.style.removeProperty("--player-image");
+    avatarThumb.style.backgroundImage = "";
+  }
   playerName.value = player.name;
   roleBadge.textContent = isAttacker ? "Attacking" : "Defending";
   roleBadge.classList.toggle("defending", !isAttacker);
@@ -304,6 +323,7 @@ function handleAction(action, element) {
 
   const actions = {
     "toggle-control": () => toggleControl(playerId, element.dataset.control),
+    "choose-image": () => chooseImage(playerId, element),
     "life-inc": () => changePlayerValue(playerId, "life", 1, 0, 999),
     "life-dec": () => changePlayerValue(playerId, "life", -1, 0, 999),
     "counter-inc": () => changePlayerValue(playerId, "counter", 1, -999, 999),
@@ -408,6 +428,42 @@ function resetGame() {
   });
 }
 
+function chooseImage(playerId, element) {
+  if (!playerId) return;
+  const input = element.closest(".player-panel").querySelector(".image-input");
+  input?.click();
+}
+
+function setPlayerImage(playerId, imageDataUrl) {
+  if (!playerId) return;
+  updateState((nextState) => {
+    nextState.players[playerId].image = imageDataUrl;
+  });
+}
+
+function resizeImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const maxSize = 900;
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.72));
+      };
+      image.onerror = reject;
+      image.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function vibrateOnHit(damageTaken) {
   if (damageTaken > 0 && "vibrate" in navigator) {
     navigator.vibrate([18, 24, 18]);
@@ -439,6 +495,18 @@ document.addEventListener("input", (event) => {
   state.players[playerId].name = event.target.value.slice(0, 24);
   saveState();
   renderHud();
+});
+
+
+document.addEventListener("change", async (event) => {
+  if (!event.target.matches(".image-input")) return;
+  const playerId = event.target.closest(".player-panel")?.dataset.player;
+  const file = event.target.files?.[0];
+  if (!playerId || !file) return;
+
+  const imageDataUrl = await resizeImage(file);
+  setPlayerImage(playerId, imageDataUrl);
+  event.target.value = "";
 });
 
 document.addEventListener("change", (event) => {

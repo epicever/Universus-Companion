@@ -28,16 +28,16 @@
       <section id="player-p2" class="player-zone rotated" aria-label="Player 2 panel"></section>
 
       <section class="center-panel" aria-label="Current attack and game actions">
-        <div class="combat-bar glass-card">
+        <div id="combat-bar" class="combat-bar glass-card attacker-p1">
           <div class="brand-line">
             <span class="brand-name">Universus Companion</span>
             <span id="turn-indicator" class="turn-pill"></span>
           </div>
 
           <div class="combat-readout" aria-label="Final attack values">
-            <div class="combat-chip damage-chip"><span>D</span><strong id="final-damage">0</strong></div>
-            <div id="location-core" class="combat-chip location-core mid"><strong id="attack-location">Mid</strong></div>
-            <div class="combat-chip speed-chip"><span>S</span><strong id="final-speed">0</strong></div>
+            <div class="combat-chip damage-chip"><strong class="shared-readout" id="final-damage-shared">0</strong><span>D</span><strong id="final-damage">0</strong></div>
+            <div id="location-core" class="combat-chip location-core mid"><strong class="shared-readout" id="attack-location-shared">Mid</strong><span>LOC</span><strong id="attack-location">Mid</strong></div>
+            <div class="combat-chip speed-chip"><strong class="shared-readout" id="final-speed-shared">0</strong><span>S</span><strong id="final-speed">0</strong></div>
           </div>
 
           <div class="center-actions">
@@ -54,6 +54,11 @@
     <template id="player-template">
       <article class="player-panel glass-card">
         <header class="player-topline">
+          <button class="avatar-button" data-action="choose-image" type="button" aria-label="Upload player image">
+            <span class="avatar-thumb"></span>
+            <span class="avatar-label">Image</span>
+          </button>
+          <input class="image-input" type="file" accept="image/*" hidden />
           <input class="player-name input input-ghost" aria-label="Player name" maxlength="24" />
           <span class="role-badge"></span>
         </header>
