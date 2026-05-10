@@ -12,8 +12,7 @@ const defaultState = {
 };
 
 const uiState = {
-  p1OpenControl: null,
-  p2OpenControl: null,
+  expandedRowId: null,
   pendingBlock: null
 };
 
@@ -198,12 +197,12 @@ function renderPlayer(playerId) {
   roleBadge.classList.toggle("defending", !isAttacker);
 
   content.innerHTML = `
-    <div class="compact-grid core-grid">
+    <div class="controls-stack">
       ${statAccordion(playerId, "life", "Life", `${player.life} / ${player.maxLife}`, lifeControls())}
       ${statAccordion(playerId, "counter", "Counter", player.counter, stepperControls("counter-dec", "counter-inc", "Counter"))}
       ${statAccordion(playerId, "maxLife", "Max", player.maxLife, maxLifeControls(player.maxLife))}
+      ${isAttacker ? attackerPanel(playerId) : defenderPanel()}
     </div>
-    ${isAttacker ? attackerPanel(playerId) : defenderPanel()}
   `;
 
   playerMounts[playerId].innerHTML = "";
@@ -212,24 +211,20 @@ function renderPlayer(playerId) {
 
 function attackerPanel(playerId) {
   return `
-    <div class="compact-grid attack-grid">
-      ${statAccordion(playerId, "damage", "Damage", getFinalDamage(), stepperControls("base-damage-dec", "base-damage-inc", "Damage"))}
-      ${statAccordion(playerId, "location", "Location", locationLabels[state.attack.location], locationControls())}
-      ${statAccordion(playerId, "speed", "Speed", getFinalSpeed(), stepperControls("base-speed-dec", "base-speed-inc", "Speed"))}
-    </div>
-    <div class="compact-grid bonus-grid">
-      ${statAccordion(playerId, "continuous", "Continuous", `D ${formatSigned(state.continuous.damageBonus)} / S ${formatSigned(state.continuous.speedBonus)}`, continuousControls())}
-    </div>
+    ${statAccordion(playerId, "damage", "Damage", getFinalDamage(), stepperControls("base-damage-dec", "base-damage-inc", "Damage"))}
+    ${statAccordion(playerId, "location", "Location", locationLabels[state.attack.location], locationControls())}
+    ${statAccordion(playerId, "speed", "Speed", getFinalSpeed(), stepperControls("base-speed-dec", "base-speed-inc", "Speed"))}
+    ${statAccordion(playerId, "continuous", "Continuous", `D ${formatSigned(state.continuous.damageBonus)} / S ${formatSigned(state.continuous.speedBonus)}`, continuousControls())}
   `;
 }
 
 function defenderPanel() {
   return `
-    <div class="compact-grid defender-adjust-grid" aria-label="Defending player attack adjustment controls">
+    <div class="control-row defender-adjust-grid" aria-label="Defending player attack adjustment controls">
       ${defenderAdjustCard("Attack", getFinalDamage(), "base-damage-dec", "base-damage-inc")}
       ${defenderAdjustCard("Speed", getFinalSpeed(), "base-speed-dec", "base-speed-inc")}
     </div>
-    <div class="block-row" aria-label="Defending player block controls">
+    <div class="control-row block-row" aria-label="Defending player block controls">
       <button class="block-btn block-icon-high loc-high" data-action="block" data-location="high" aria-label="High Block"><span>High Block</span></button>
       <button class="block-btn block-icon-mid loc-mid" data-action="block" data-location="mid" aria-label="Mid Block"><span>Mid Block</span></button>
       <button class="block-btn block-icon-low loc-low" data-action="block" data-location="low" aria-label="Low Block"><span>Low Block</span></button>
@@ -248,15 +243,16 @@ function defenderAdjustCard(label, value, decAction, incAction) {
 }
 
 function statAccordion(playerId, controlName, label, value, controlsMarkup) {
-  const isOpen = uiState[`${playerId}OpenControl`] === controlName;
+  const rowId = getRowId(playerId, controlName);
+  const isOpen = uiState.expandedRowId === rowId;
   return `
-    <div class="stat-accordion ${isOpen ? "open" : ""}" data-control="${controlName}">
+    <div class="control-row stat-accordion ${isOpen ? "open expanded" : ""}" data-control="${controlName}" data-row-id="${rowId}">
       <button class="stat-card" data-action="toggle-control" data-control="${controlName}" aria-expanded="${isOpen}">
         <span>${label}</span>
         <strong>${value}</strong>
       </button>
       <div class="accordion-body" aria-hidden="${!isOpen}">
-        <div class="accordion-inner">${controlsMarkup}</div>
+        <div class="accordion-inner">${isOpen ? controlsMarkup : ""}</div>
       </div>
     </div>
   `;
@@ -311,6 +307,9 @@ function locationButton(location, label) {
 }
 
 function renderBlockModal() {
+  blockModal.classList.toggle("defender-p2", getDefenderId() === "p2");
+  blockModal.classList.toggle("defender-p1", getDefenderId() === "p1");
+
   if (!uiState.pendingBlock) {
     blockModal.classList.add("hidden");
     blockModal.innerHTML = "";
@@ -378,22 +377,29 @@ function animatePendingHit() {
 }
 
 // ---------- UI accordion actions ----------
+function getRowId(playerId, controlName) {
+  return `${playerId}:${controlName}`;
+}
+
+function hasExpandedRow(playerId) {
+  return typeof uiState.expandedRowId === "string" && uiState.expandedRowId.startsWith(`${playerId}:`);
+}
+
 function toggleControl(playerId, controlName) {
   if (!playerId || !controlNames.includes(controlName)) return;
-  const key = `${playerId}OpenControl`;
-  uiState[key] = uiState[key] === controlName ? null : controlName;
+  const rowId = getRowId(playerId, controlName);
+  uiState.expandedRowId = uiState.expandedRowId === rowId ? null : rowId;
   render();
 }
 
 function closeAllControls() {
-  uiState.p1OpenControl = null;
-  uiState.p2OpenControl = null;
+  uiState.expandedRowId = null;
   uiState.pendingBlock = null;
 }
 
 function closePlayerControls(playerId) {
-  if (!playerId) return;
-  uiState[`${playerId}OpenControl`] = null;
+  if (!playerId || !hasExpandedRow(playerId)) return;
+  uiState.expandedRowId = null;
 }
 
 // ---------- Game actions ----------

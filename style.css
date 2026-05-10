@@ -218,35 +218,79 @@ input {
 
 .player-content {
   display: grid;
-  grid-template-rows: repeat(3, auto);
-  align-content: space-between;
-  gap: clamp(0.35rem, 1vw, 0.6rem);
   height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
-.player-panel:not(.is-attacker) .player-content {
-  grid-template-rows: auto auto minmax(0, 1fr);
-}
-
-.player-panel:not(.is-attacker) .block-row {
+.controls-stack {
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: clamp(0.28rem, 0.8vw, 0.5rem);
   height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
-.compact-grid {
-  display: grid;
-  gap: clamp(0.32rem, 0.9vw, 0.55rem);
+.player-panel.is-attacker .controls-stack {
+  grid-template-rows: repeat(7, minmax(0, 1fr));
+}
+
+.player-panel:not(.is-attacker) .controls-stack {
+  grid-template-rows: repeat(3, minmax(0, 1fr)) minmax(0, 1.05fr) minmax(0, 1.2fr);
+}
+
+.player-panel.is-attacker .controls-stack:has(.control-row.expanded) {
+  grid-template-rows: repeat(7, minmax(0, 0.58fr));
+}
+
+.player-panel:not(.is-attacker) .controls-stack:has(.control-row.expanded) {
+  grid-template-rows: repeat(3, minmax(0, 0.58fr)) minmax(0, 0.68fr) minmax(0, 0.76fr);
+}
+
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(1).expanded) { grid-template-rows: minmax(0, 2.55fr) repeat(6, minmax(0, 0.58fr)); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(2).expanded) { grid-template-rows: minmax(0, 0.58fr) minmax(0, 2.55fr) repeat(5, minmax(0, 0.58fr)); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(3).expanded) { grid-template-rows: repeat(2, minmax(0, 0.58fr)) minmax(0, 2.55fr) repeat(4, minmax(0, 0.58fr)); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(4).expanded) { grid-template-rows: repeat(3, minmax(0, 0.58fr)) minmax(0, 2.55fr) repeat(3, minmax(0, 0.58fr)); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(5).expanded) { grid-template-rows: repeat(4, minmax(0, 0.58fr)) minmax(0, 2.55fr) repeat(2, minmax(0, 0.58fr)); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(6).expanded) { grid-template-rows: repeat(5, minmax(0, 0.58fr)) minmax(0, 2.55fr) minmax(0, 0.58fr); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(7).expanded) { grid-template-rows: repeat(6, minmax(0, 0.58fr)) minmax(0, 2.55fr); }
+
+
+.player-panel:not(.is-attacker) .controls-stack:has(.control-row:nth-child(1).expanded) { grid-template-rows: minmax(0, 2.35fr) repeat(2, minmax(0, 0.58fr)) minmax(0, 0.68fr) minmax(0, 0.76fr); }
+.player-panel:not(.is-attacker) .controls-stack:has(.control-row:nth-child(2).expanded) { grid-template-rows: minmax(0, 0.58fr) minmax(0, 2.35fr) minmax(0, 0.58fr) minmax(0, 0.68fr) minmax(0, 0.76fr); }
+.player-panel:not(.is-attacker) .controls-stack:has(.control-row:nth-child(3).expanded) { grid-template-rows: repeat(2, minmax(0, 0.58fr)) minmax(0, 2.35fr) minmax(0, 0.68fr) minmax(0, 0.76fr); }
+
+.control-row {
   min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.core-grid {
-  grid-template-columns: 1.35fr 1fr 0.85fr;
+.stat-accordion {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 0fr;
+  gap: 0;
+  transition: grid-template-rows 180ms ease;
 }
 
-.attack-grid {
-  grid-template-columns: 1fr 0.95fr 1fr;
+.stat-accordion.open {
+  grid-template-rows: minmax(0, 0.95fr) minmax(0, 1fr);
+}
+
+.stat-card,
+.defender-adjust-card,
+.block-btn {
+  height: 100%;
+}
+
+.defender-adjust-grid,
+.block-row,
+.control-strip,
+.combat-readout,
+.center-actions {
+  display: grid;
+  gap: 0.35rem;
 }
 
 .defender-adjust-grid {
@@ -292,9 +336,6 @@ input {
   min-height: 2.35rem;
 }
 
-.bonus-grid {
-  grid-template-columns: 1fr;
-}
 
 .stat-accordion {
   min-width: 0;
@@ -305,7 +346,7 @@ input {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: baseline;
   width: 100%;
-  min-height: 2.85rem;
+  min-height: 0;
   gap: 0.35rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1rem;
@@ -353,21 +394,28 @@ input {
 }
 
 .accordion-body {
+  min-height: 0;
   max-height: 0;
   opacity: 0;
   overflow: hidden;
-  transform: translateY(-0.25rem);
+  transform: translateY(-0.18rem);
   transition: max-height 180ms ease, opacity 160ms ease, transform 160ms ease;
 }
 
 .stat-accordion.open .accordion-body {
-  max-height: 4.8rem;
+  max-height: 100%;
   opacity: 1;
   transform: translateY(0);
 }
 
 .accordion-inner {
-  padding-top: 0.32rem;
+  height: 100%;
+  min-height: 0;
+  padding-top: 0.28rem;
+}
+
+.accordion-inner .control-strip {
+  height: 100%;
 }
 
 .control-strip,
@@ -383,8 +431,7 @@ input {
 }
 
 .three-up,
-.block-row,
-.combat-readout {
+.block-row {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -398,7 +445,7 @@ input {
 
 .control-btn,
 .block-btn {
-  min-height: 2.45rem;
+  min-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0.9rem;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
@@ -445,20 +492,20 @@ input {
 }
 
 .max-life-input {
-  height: 2.45rem;
+  height: 100%;
   min-height: 0;
   background: rgba(15, 23, 42, 0.86);
   font-weight: 900;
 }
 
 .block-row {
-  min-height: 3.2rem;
+  min-height: 0;
 }
 
 .block-btn {
   position: relative;
   height: 100%;
-  min-height: 3.2rem;
+  min-height: 0;
   overflow: hidden;
   padding: 0.35rem;
   background-image: var(--block-icon), linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
@@ -562,6 +609,8 @@ input {
 .brand-line {
   grid-area: brand;
   display: grid;
+  justify-items: center;
+  text-align: center;
   gap: 0.25rem;
   min-width: 0;
 }
@@ -588,8 +637,17 @@ input {
 
 .combat-readout {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
+}
+
+.damage-chip {
+  order: 2;
+}
+
+.speed-chip {
+  order: 1;
 }
 
 .combat-chip {
@@ -671,6 +729,21 @@ input {
 .center-actions {
   grid-area: actions;
   grid-template-columns: auto auto;
+  justify-content: center;
+}
+
+.combat-bar.attacker-p2 .brand-line,
+.combat-bar.attacker-p2 .center-actions,
+.combat-bar.attacker-p2 .last-damage {
+  transform: rotate(180deg);
+}
+
+.combat-bar.attacker-p2 .combat-readout-p2 {
+  transform: rotate(180deg);
+}
+
+.combat-bar.attacker-p2 .combat-readout-p1 {
+  transform: none;
 }
 
 .action-glow {
@@ -756,16 +829,12 @@ input {
   }
 
   .player-content,
-  .compact-grid,
+  .controls-stack,
   .control-strip,
   .block-row,
   .combat-readout,
   .center-actions {
     gap: 0.24rem;
-  }
-
-  .core-grid {
-    grid-template-columns: 1.35fr 1fr 0.8fr;
   }
 
   .defender-adjust-card {
@@ -788,7 +857,7 @@ input {
   }
 
   .stat-card {
-    min-height: 2.12rem;
+    min-height: 0;
     border-radius: 0.72rem;
     padding: 0.28rem 0.38rem;
   }
@@ -803,7 +872,7 @@ input {
   }
 
   .stat-accordion.open .accordion-body {
-    max-height: 2.75rem;
+    max-height: 100%;
   }
 
   .accordion-inner {
@@ -814,14 +883,14 @@ input {
   .block-btn,
   .max-life-input,
   button {
-    min-height: 34px;
+    min-height: 0;
     padding: 0.22rem 0.32rem;
     border-radius: 0.65rem;
     font-size: 0.76rem;
   }
 
   .max-life-input {
-    height: 34px;
+    height: 100%;
   }
 
   .control-btn.location-btn {
@@ -832,11 +901,11 @@ input {
 
 
   .block-row {
-    min-height: 2.35rem;
+    min-height: 0;
   }
 
   .block-btn {
-    min-height: 2.35rem;
+    min-height: 0;
     font-size: 0.64rem;
     letter-spacing: 0.025em;
   }
@@ -909,7 +978,7 @@ input {
   }
 
   .player-content,
-  .compact-grid,
+  .controls-stack,
   .control-strip,
   .block-row,
   .combat-readout,
@@ -944,7 +1013,7 @@ input {
   }
 
   .stat-card {
-    min-height: 1.78rem;
+    min-height: 0;
     padding: 0.2rem 0.32rem;
   }
 
@@ -957,24 +1026,24 @@ input {
   }
 
   .stat-accordion.open .accordion-body {
-    max-height: 2.38rem;
+    max-height: 100%;
   }
 
   .control-btn,
   .block-btn,
   .max-life-input,
   button {
-    min-height: 30px;
+    min-height: 0;
     font-size: 0.68rem;
   }
 
   .max-life-input {
-    height: 30px;
+    height: 100%;
   }
 
   .block-row,
   .block-btn {
-    min-height: 2rem;
+    min-height: 0;
   }
 
   .combat-bar {
@@ -1010,6 +1079,10 @@ input {
   inset: 0;
   background: rgba(2, 6, 23, 0.72);
   backdrop-filter: blur(10px);
+}
+
+.block-modal.defender-p2 .block-modal-card {
+  transform: rotate(180deg);
 }
 
 .block-modal-card {
