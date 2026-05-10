@@ -13,7 +13,8 @@ const defaultState = {
 
 const uiState = {
   p1OpenControl: null,
-  p2OpenControl: null
+  p2OpenControl: null,
+  pendingBlock: null
 };
 
 const controlNames = ["life", "counter", "damage", "speed", "location", "continuous", "maxLife"];
@@ -41,6 +42,8 @@ const hud = {
   turnIndicator: document.querySelector("#turn-indicator"),
   lastDamage: document.querySelector("#last-damage")
 };
+
+const blockModal = document.querySelector("#block-modal");
 
 // ---------- State and persistence ----------
 function loadState() {
@@ -138,6 +141,7 @@ function render() {
   renderHud();
   renderPlayer("p2");
   renderPlayer("p1");
+  renderBlockModal();
   animatePendingHit();
 }
 
@@ -303,7 +307,64 @@ function locationControls() {
 
 function locationButton(location, label) {
   const active = state.attack.location === location ? "active" : "";
-  return `<button class="control-btn location-btn loc-${location} ${active}" data-action="set-location" data-location="${location}">${label}</button>`;
+  return `<button class="control-btn location-btn attack-icon-${location} loc-${location} ${active}" data-action="set-location" data-location="${location}" aria-label="${label} attack location" title="${label} attack location"></button>`;
+}
+
+function renderBlockModal() {
+  if (!uiState.pendingBlock) {
+    blockModal.classList.add("hidden");
+    blockModal.innerHTML = "";
+    return;
+  }
+
+  const { blockLocation, bonus, difficulty } = uiState.pendingBlock;
+  const blockLabel = locationLabels[blockLocation];
+  blockModal.classList.remove("hidden");
+
+  if (bonus === null) {
+    blockModal.innerHTML = `
+      <div class="block-modal-backdrop" data-action="close-block-modal"></div>
+      <div class="block-modal-card glass-card" role="dialog" aria-modal="true" aria-label="Choose ${blockLabel} block bonus">
+        <header class="block-modal-header">
+          <span>${blockLabel} Block</span>
+          <button class="btn btn-xs btn-ghost" data-action="close-block-modal" aria-label="Cancel block">✕</button>
+        </header>
+        <p class="block-modal-copy">Choose block modifier</p>
+        <div class="block-bonus-grid">
+          ${[0, 1, 2, 3, 4, 5, 6].map((value) => blockBonusButton(blockLocation, value)).join("")}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  blockModal.innerHTML = `
+    <div class="block-modal-backdrop" data-action="close-block-modal"></div>
+    <div class="block-modal-card glass-card" role="dialog" aria-modal="true" aria-label="${blockLabel} block result">
+      <header class="block-modal-header">
+        <span>${blockLabel} Block ${formatSigned(bonus)}</span>
+        <button class="btn btn-xs btn-ghost" data-action="close-block-modal" aria-label="Cancel block">✕</button>
+      </header>
+      <div class="difficulty-readout block-icon-${blockLocation}">
+        <span>Difficulty</span>
+        <strong>${difficulty}</strong>
+        <small>${formatSigned(bonus)} block + ${getFinalSpeed()} speed</small>
+      </div>
+      <div class="block-result-actions">
+        <button class="btn btn-success" data-action="block-success">Success</button>
+        <button class="btn btn-error" data-action="block-fail">Fail</button>
+      </div>
+    </div>
+  `;
+}
+
+function blockBonusButton(blockLocation, value) {
+  const blockLabel = locationLabels[blockLocation];
+  return `
+    <button class="block-bonus-btn block-icon-${blockLocation}" data-action="block-bonus" data-bonus="${value}" aria-label="${blockLabel} block ${formatSigned(value)}">
+      <span>${formatSigned(value)}</span>
+    </button>
+  `;
 }
 
 function animatePendingHit() {
@@ -327,6 +388,7 @@ function toggleControl(playerId, controlName) {
 function closeAllControls() {
   uiState.p1OpenControl = null;
   uiState.p2OpenControl = null;
+  uiState.pendingBlock = null;
 }
 
 function closePlayerControls(playerId) {
@@ -355,7 +417,11 @@ function handleAction(action, element) {
     "cont-speed-inc": () => changeContinuousValue("speedBonus", 1),
     "cont-speed-dec": () => changeContinuousValue("speedBonus", -1),
     "set-location": () => setAttackLocation(element.dataset.location),
-    block: () => applyBlock(element.dataset.location),
+    block: () => openBlockBonusPicker(element.dataset.location),
+    "block-bonus": () => chooseBlockBonus(element.dataset.bonus),
+    "block-success": () => resolvePendingBlock(true),
+    "block-fail": () => resolvePendingBlock(false),
+    "close-block-modal": closeBlockModal,
     "end-turn": endTurn,
     "reset-game": resetGame
   };
@@ -400,17 +466,45 @@ function setAttackLocation(location) {
   });
 }
 
-function applyBlock(blockLocation) {
+function openBlockBonusPicker(blockLocation) {
   if (!locationLabels[blockLocation]) return;
+  uiState.pendingBlock = { blockLocation, bonus: null, difficulty: null };
+  render();
+}
+
+function chooseBlockBonus(rawBonus) {
+  if (!uiState.pendingBlock) return;
+  const bonus = clampNumber(rawBonus, 0, 6);
+  uiState.pendingBlock = {
+    ...uiState.pendingBlock,
+    bonus,
+    difficulty: bonus + getFinalSpeed()
+  };
+  renderBlockModal();
+}
+
+function closeBlockModal() {
+  uiState.pendingBlock = null;
+  renderBlockModal();
+}
+
+function resolvePendingBlock(success) {
+  if (!uiState.pendingBlock) return;
+  const { blockLocation, bonus, difficulty } = uiState.pendingBlock;
+  if (!locationLabels[blockLocation] || bonus === null) return;
+
   const defenderId = getDefenderId();
-  const result = getBlockResult(blockLocation);
+  const result = success
+    ? getBlockResult(blockLocation)
+    : { blockQuality: "failed", blockedAmount: 0, damageTaken: getFinalDamage() };
 
   pendingHitPlayer = defenderId;
   closePlayerControls(defenderId);
+  uiState.pendingBlock = null;
 
   updateState((nextState) => {
     nextState.players[defenderId].life = Math.max(0, nextState.players[defenderId].life - result.damageTaken);
-    nextState.meta.lastDamage = { defenderId, ...result };
+    nextState.meta.lastDamage = { defenderId, blockLocation, bonus, difficulty, success, ...result };
     nextState.meta.lastHitPlayer = defenderId;
     resetAttackValues(nextState);
   });
