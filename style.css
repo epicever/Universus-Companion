@@ -6,12 +6,6 @@
   --high: #fb3b5f;
   --mid: #fb923c;
   --low: #facc15;
-  --attack-high-icon: url("higha.png");
-  --attack-mid-icon: url("mida.png");
-  --attack-low-icon: url("lowa.png");
-  --block-high-icon: url("highb.png");
-  --block-mid-icon: url("midb.png");
-  --block-low-icon: url("lowb.png");
 }
 
 * {
@@ -227,7 +221,7 @@ input {
 }
 
 .player-panel:not(.is-attacker) .player-content {
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .player-panel:not(.is-attacker) .block-row {
@@ -247,49 +241,6 @@ input {
 
 .attack-grid {
   grid-template-columns: 1fr 0.95fr 1fr;
-}
-
-.defender-adjust-grid {
-  grid-template-columns: 1fr 1fr;
-}
-
-.defender-adjust-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 0.32rem;
-  min-width: 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.95rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.035));
-  padding: 0.32rem;
-}
-
-.defender-adjust-readout {
-  display: grid;
-  min-width: 0;
-}
-
-.defender-adjust-readout span {
-  color: #94a3b8;
-  font-size: 0.58rem;
-  font-weight: 900;
-  letter-spacing: 0.09em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.defender-adjust-readout strong {
-  color: #fff;
-  font-size: clamp(1.1rem, 2.6vw, 1.7rem);
-  font-weight: 1000;
-  letter-spacing: -0.06em;
-  line-height: 1;
-}
-
-.defender-adjust-card .control-btn {
-  width: 2.35rem;
-  min-height: 2.35rem;
 }
 
 .bonus-grid {
@@ -428,37 +379,12 @@ input {
 }
 
 .block-btn {
-  position: relative;
   height: 100%;
   min-height: 3.2rem;
-  overflow: hidden;
   padding: 0.35rem;
-  background-image: var(--block-icon), linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  font-size: 0;
-}
-
-.block-btn span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-.block-icon-high {
-  --block-icon: var(--block-high-icon);
-}
-
-.block-icon-mid {
-  --block-icon: var(--block-mid-icon);
-}
-
-.block-icon-low {
-  --block-icon: var(--block-low-icon);
+  font-size: clamp(0.78rem, 1.6vw, 1rem);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .loc-high {
@@ -560,13 +486,11 @@ input {
 
 .combat-readout {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.35rem;
 }
 
 .combat-chip {
-  position: relative;
-  overflow: hidden;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
@@ -578,11 +502,6 @@ input {
   background: rgba(255, 255, 255, 0.06);
   box-shadow: inset 0 0 28px rgba(34, 211, 238, 0.06);
   transition: transform 150ms ease;
-}
-
-.combat-chip > * {
-  position: relative;
-  z-index: 1;
 }
 
 .combat-chip span {
@@ -599,42 +518,6 @@ input {
   font-weight: 1000;
   letter-spacing: -0.06em;
   line-height: 1;
-}
-
-.speed-chip::before {
-  content: "";
-  position: absolute;
-  inset: 0.12rem;
-  z-index: 0;
-  background-image: var(--speed-attack-icon);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  opacity: 0.64;
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.14));
-}
-
-.speed-chip::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: linear-gradient(90deg, rgba(2, 6, 23, 0.62), rgba(2, 6, 23, 0.14), rgba(2, 6, 23, 0.72));
-}
-
-.attack-icon-high {
-  --speed-attack-icon: var(--attack-high-icon);
-  border-color: rgba(251, 59, 95, 0.52);
-}
-
-.attack-icon-mid {
-  --speed-attack-icon: var(--attack-mid-icon);
-  border-color: rgba(251, 146, 60, 0.52);
-}
-
-.attack-icon-low {
-  --speed-attack-icon: var(--attack-low-icon);
-  border-color: rgba(250, 204, 21, 0.52);
 }
 
 .center-actions {
@@ -735,25 +618,6 @@ input {
 
   .core-grid {
     grid-template-columns: 1.35fr 1fr 0.8fr;
-  }
-
-  .defender-adjust-card {
-    gap: 0.2rem;
-    border-radius: 0.68rem;
-    padding: 0.22rem;
-  }
-
-  .defender-adjust-readout span {
-    font-size: 0.46rem;
-  }
-
-  .defender-adjust-readout strong {
-    font-size: 0.95rem;
-  }
-
-  .defender-adjust-card .control-btn {
-    width: 1.85rem;
-    min-height: 1.85rem;
   }
 
   .stat-card {
@@ -898,11 +762,6 @@ input {
   .turn-pill {
     padding: 0.16rem 0.34rem;
     font-size: 0.48rem;
-  }
-
-  .defender-adjust-card .control-btn {
-    width: 1.55rem;
-    min-height: 1.55rem;
   }
 
   .stat-card {

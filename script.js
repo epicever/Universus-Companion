@@ -37,7 +37,8 @@ const hud = {
   combatBar: document.querySelector("#combat-bar"),
   damageReadouts: document.querySelectorAll('[data-attack-field="damage"]'),
   speedReadouts: document.querySelectorAll('[data-attack-field="speed"]'),
-  speedChips: document.querySelectorAll("[data-speed-chip]"),
+  locationReadouts: document.querySelectorAll('[data-attack-field="location"]'),
+  locationChips: document.querySelectorAll("[data-location-chip]"),
   turnIndicator: document.querySelector("#turn-indicator"),
   lastDamage: document.querySelector("#last-damage")
 };
@@ -155,9 +156,11 @@ function renderHud() {
   hud.speedReadouts.forEach((readout) => {
     readout.textContent = finalSpeed;
   });
-  hud.speedChips.forEach((chip) => {
-    chip.className = `combat-chip speed-chip attack-icon-${location}`;
-    chip.setAttribute("aria-label", `Speed ${finalSpeed}, ${locationLabels[location]} attack`);
+  hud.locationReadouts.forEach((readout) => {
+    readout.textContent = locationLabels[location];
+  });
+  hud.locationChips.forEach((chip) => {
+    chip.className = `combat-chip location-core ${location}`;
   });
   hud.turnIndicator.textContent = `${attacker.name} attacking`;
 
@@ -221,24 +224,10 @@ function attackerPanel(playerId) {
 
 function defenderPanel() {
   return `
-    <div class="compact-grid defender-adjust-grid" aria-label="Defending player attack adjustment controls">
-      ${defenderAdjustCard("Attack", getFinalDamage(), "base-damage-dec", "base-damage-inc")}
-      ${defenderAdjustCard("Speed", getFinalSpeed(), "base-speed-dec", "base-speed-inc")}
-    </div>
     <div class="block-row" aria-label="Defending player block controls">
-      <button class="block-btn block-icon-high loc-high" data-action="block" data-location="high" aria-label="High Block"><span>High Block</span></button>
-      <button class="block-btn block-icon-mid loc-mid" data-action="block" data-location="mid" aria-label="Mid Block"><span>Mid Block</span></button>
-      <button class="block-btn block-icon-low loc-low" data-action="block" data-location="low" aria-label="Low Block"><span>Low Block</span></button>
-    </div>
-  `;
-}
-
-function defenderAdjustCard(label, value, decAction, incAction) {
-  return `
-    <div class="defender-adjust-card">
-      <div class="defender-adjust-readout"><span>${label}</span><strong>${value}</strong></div>
-      <button class="control-btn" data-action="${decAction}" aria-label="Decrease ${label}">−</button>
-      <button class="control-btn" data-action="${incAction}" aria-label="Increase ${label}">+</button>
+      <button class="block-btn loc-high" data-action="block" data-location="high">High Block</button>
+      <button class="block-btn loc-mid" data-action="block" data-location="mid">Mid Block</button>
+      <button class="block-btn loc-low" data-action="block" data-location="low">Low Block</button>
     </div>
   `;
 }
