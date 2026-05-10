@@ -15,12 +15,16 @@ const uiState = {
   expandedRowId: null,
   pendingBlock: null,
   maxLifePlayerId: null,
+  continuousPopup: null,
   lifePressTimer: null,
+  attackPressTimer: null,
   suppressNextLifeClick: false,
-  lastLifeTap: { playerId: null, time: 0 }
+  suppressNextAttackTap: false,
+  lastLifeTap: { playerId: null, time: 0 },
+  attackTap: { key: null, count: 0, timer: null, pointerSide: "right" }
 };
 
-const controlNames = ["life", "counter", "damage", "speed", "location", "continuous"];
+const controlNames = ["life", "counter", "location"];
 const locationLabels = { high: "High", mid: "Mid", low: "Low" };
 const blockTable = {
   high: { high: "full", mid: "half", low: "none" },
@@ -214,33 +218,16 @@ function renderPlayer(playerId) {
 
 function attackerPanel(playerId) {
   return `
-    ${statAccordion(playerId, "damage", "Damage", getFinalDamage(), stepperControls("base-damage-dec", "base-damage-inc", "Damage"))}
     ${statAccordion(playerId, "location", "Location", locationLabels[state.attack.location], locationControls())}
-    ${statAccordion(playerId, "speed", "Speed", getFinalSpeed(), stepperControls("base-speed-dec", "base-speed-inc", "Speed"))}
-    ${statAccordion(playerId, "continuous", "Continuous", `D ${formatSigned(state.continuous.damageBonus)} / S ${formatSigned(state.continuous.speedBonus)}`, continuousControls())}
   `;
 }
 
 function defenderPanel() {
   return `
-    <div class="control-row defender-adjust-grid" aria-label="Defending player attack adjustment controls">
-      ${defenderAdjustCard("Attack", getFinalDamage(), "base-damage-dec", "base-damage-inc")}
-      ${defenderAdjustCard("Speed", getFinalSpeed(), "base-speed-dec", "base-speed-inc")}
-    </div>
     <div class="control-row block-row" aria-label="Defending player block controls">
       <button class="block-btn block-icon-high loc-high" data-action="block" data-location="high" aria-label="High Block"><span>High Block</span></button>
       <button class="block-btn block-icon-mid loc-mid" data-action="block" data-location="mid" aria-label="Mid Block"><span>Mid Block</span></button>
       <button class="block-btn block-icon-low loc-low" data-action="block" data-location="low" aria-label="Low Block"><span>Low Block</span></button>
-    </div>
-  `;
-}
-
-function defenderAdjustCard(label, value, decAction, incAction) {
-  return `
-    <div class="defender-adjust-card">
-      <div class="defender-adjust-readout"><span>${label}</span><strong>${value}</strong></div>
-      <button class="control-btn" data-action="${decAction}" aria-label="Decrease ${label}">−</button>
-      <button class="control-btn" data-action="${incAction}" aria-label="Increase ${label}">+</button>
     </div>
   `;
 }
@@ -275,17 +262,6 @@ function lifeControls() {
   return stepperControls("life-dec", "life-inc", "Life");
 }
 
-function continuousControls() {
-  return `
-    <div class="control-strip four-up">
-      <button class="control-btn" data-action="cont-damage-dec">D−</button>
-      <button class="control-btn" data-action="cont-damage-inc">D+</button>
-      <button class="control-btn" data-action="cont-speed-dec">S−</button>
-      <button class="control-btn" data-action="cont-speed-inc">S+</button>
-    </div>
-  `;
-}
-
 function locationControls() {
   return `
     <div class="control-strip three-up">
@@ -310,7 +286,7 @@ function renderMaxLifeModal() {
   blockModal.classList.remove("hidden");
   blockModal.classList.toggle("max-life-p2", playerId === "p2");
   blockModal.classList.toggle("max-life-p1", playerId === "p1");
-  blockModal.classList.remove("defender-p1", "defender-p2");
+  blockModal.classList.remove("defender-p1", "defender-p2", "continuous-p1", "continuous-p2");
   blockModal.innerHTML = `
     <div class="block-modal-backdrop" data-action="close-max-life-modal"></div>
     <div class="block-modal-card max-life-modal-card glass-card" role="dialog" aria-modal="true" aria-label="Set ${player.name} max health">
@@ -335,12 +311,47 @@ function renderMaxLifeModal() {
   return true;
 }
 
+function renderContinuousModal() {
+  const popup = uiState.continuousPopup;
+  if (!popup) return false;
+
+  const { playerId, stat } = popup;
+  const isDamage = stat === "damage";
+  const label = isDamage ? "Continuous Attack" : "Continuous Speed";
+  const key = isDamage ? "damageBonus" : "speedBonus";
+  const value = state.continuous[key];
+
+  blockModal.classList.remove("hidden");
+  blockModal.classList.toggle("continuous-p2", playerId === "p2");
+  blockModal.classList.toggle("continuous-p1", playerId === "p1");
+  blockModal.classList.remove("defender-p1", "defender-p2", "max-life-p1", "max-life-p2");
+  blockModal.innerHTML = `
+    <div class="block-modal-backdrop" data-action="close-continuous-modal"></div>
+    <div class="block-modal-card continuous-modal-card glass-card" role="dialog" aria-modal="true" aria-label="${label}">
+      <header class="block-modal-header">
+        <span>${label}</span>
+        <button class="btn btn-xs btn-ghost" data-action="close-continuous-modal" aria-label="Close ${label}">✕</button>
+      </header>
+      <div class="continuous-readout ${isDamage ? "damage-chip" : "speed-chip attack-icon-" + state.attack.location}">
+        <span>${isDamage ? "Attack Bonus" : "Speed Bonus"}</span>
+        <strong>${formatSigned(value)}</strong>
+      </div>
+      <div class="block-result-actions">
+        <button class="control-btn" data-action="cont-popup-dec">−1</button>
+        <button class="control-btn" data-action="cont-popup-inc">+1</button>
+      </div>
+    </div>
+  `;
+  return true;
+}
+
 function renderBlockModal() {
   if (renderMaxLifeModal()) return;
+  if (renderContinuousModal()) return;
 
   blockModal.classList.toggle("defender-p2", getDefenderId() === "p2");
   blockModal.classList.toggle("defender-p1", getDefenderId() === "p1");
-  blockModal.classList.remove("max-life-p1", "max-life-p2");
+  blockModal.classList.remove("max-life-p1", "max-life-p2", "continuous-p1", "continuous-p2");
 
   if (!uiState.pendingBlock) {
     blockModal.classList.add("hidden");
@@ -428,6 +439,7 @@ function closeAllControls() {
   uiState.expandedRowId = null;
   uiState.pendingBlock = null;
   uiState.maxLifePlayerId = null;
+  uiState.continuousPopup = null;
 }
 
 function closePlayerControls(playerId) {
@@ -470,6 +482,8 @@ function handleAction(action, element) {
     "cont-damage-dec": () => changeContinuousValue("damageBonus", -1),
     "cont-speed-inc": () => changeContinuousValue("speedBonus", 1),
     "cont-speed-dec": () => changeContinuousValue("speedBonus", -1),
+    "cont-popup-inc": () => changeContinuousFromPopup(1),
+    "cont-popup-dec": () => changeContinuousFromPopup(-1),
     "set-location": () => setAttackLocation(element.dataset.location),
     block: () => openBlockBonusPicker(element.dataset.location),
     "block-bonus": () => chooseBlockBonus(element.dataset.bonus),
@@ -477,6 +491,7 @@ function handleAction(action, element) {
     "block-fail": () => resolvePendingBlock(false),
     "close-block-modal": closeBlockModal,
     "close-max-life-modal": closeMaxLifeModal,
+    "close-continuous-modal": closeContinuousModal,
     "end-turn": endTurn,
     "reset-game": resetGame
   };
@@ -554,6 +569,25 @@ function openMaxLifeModal(playerId) {
 function closeMaxLifeModal() {
   uiState.maxLifePlayerId = null;
   renderBlockModal();
+}
+
+function openContinuousModal(playerId, stat) {
+  if (!state.players[playerId] || !["damage", "speed"].includes(stat)) return;
+  closeAllControls();
+  uiState.continuousPopup = { playerId, stat };
+  renderBlockModal();
+}
+
+function closeContinuousModal() {
+  uiState.continuousPopup = null;
+  renderBlockModal();
+}
+
+function changeContinuousFromPopup(delta) {
+  const stat = uiState.continuousPopup?.stat;
+  const key = stat === "damage" ? "damageBonus" : stat === "speed" ? "speedBonus" : null;
+  if (!key) return;
+  changeContinuousValue(key, delta);
 }
 
 function resolvePendingBlock(success) {
@@ -669,8 +703,83 @@ function clearLifePressTimer() {
   uiState.lifePressTimer = null;
 }
 
+function getAttackChipInfo(element, event) {
+  const chip = element.closest("[data-attack-chip]");
+  if (!chip) return null;
+  const rect = chip.getBoundingClientRect();
+  return {
+    chip,
+    stat: chip.dataset.attackChip,
+    playerId: chip.dataset.playerSide,
+    pointerSide: event.clientX < rect.left + rect.width / 2 ? "left" : "right"
+  };
+}
+
+function getAttackStateKey(stat) {
+  return stat === "damage" ? "baseDamage" : stat === "speed" ? "baseSpeed" : null;
+}
+
+function clearAttackPressTimer() {
+  if (!uiState.attackPressTimer) return;
+  clearTimeout(uiState.attackPressTimer);
+  uiState.attackPressTimer = null;
+}
+
+function clearAttackTapTimer() {
+  if (!uiState.attackTap.timer) return;
+  clearTimeout(uiState.attackTap.timer);
+  uiState.attackTap.timer = null;
+}
+
+function queueAttackTap(info) {
+  if (!info) return;
+  const key = `${info.playerId}:${info.stat}`;
+  if (uiState.attackTap.key !== key) {
+    clearAttackTapTimer();
+    uiState.attackTap = { key, count: 0, timer: null, pointerSide: info.pointerSide };
+  }
+
+  uiState.attackTap.count += 1;
+  uiState.attackTap.pointerSide = info.pointerSide;
+
+  if (uiState.attackTap.count >= 3) {
+    applyQueuedAttackTap();
+    return;
+  }
+
+  clearAttackTapTimer();
+  uiState.attackTap.timer = setTimeout(applyQueuedAttackTap, 360);
+}
+
+function applyQueuedAttackTap() {
+  const { key, count, pointerSide } = uiState.attackTap;
+  clearAttackTapTimer();
+  uiState.attackTap = { key: null, count: 0, timer: null, pointerSide: "right" };
+  if (!key || count < 1) return;
+
+  const stat = key.split(":")[1];
+  const stateKey = getAttackStateKey(stat);
+  if (!stateKey) return;
+
+  const delta = count >= 3 ? -1 : count === 2 ? 1 : pointerSide === "left" ? -1 : 1;
+  changeAttackValue(stateKey, delta);
+}
+
 // ---------- Event delegation ----------
 document.addEventListener("pointerdown", (event) => {
+  const attackInfo = getAttackChipInfo(event.target, event);
+  if (attackInfo) {
+    clearAttackPressTimer();
+    uiState.attackPressTimer = setTimeout(() => {
+      uiState.attackPressTimer = null;
+      uiState.suppressNextAttackTap = true;
+      clearAttackTapTimer();
+      uiState.attackTap = { key: null, count: 0, timer: null, pointerSide: "right" };
+      openContinuousModal(attackInfo.playerId, attackInfo.stat);
+    }, 1000);
+    return;
+  }
+
   const lifeCard = event.target.closest('.stat-card[data-control="life"]');
   if (!lifeCard) return;
   const playerId = getLifeCardPlayerId(lifeCard);
@@ -684,9 +793,25 @@ document.addEventListener("pointerdown", (event) => {
   }, 1000);
 });
 
-document.addEventListener("pointerup", clearLifePressTimer);
-document.addEventListener("pointercancel", clearLifePressTimer);
-document.addEventListener("pointerleave", clearLifePressTimer);
+document.addEventListener("pointerup", (event) => {
+  clearLifePressTimer();
+  clearAttackPressTimer();
+  const attackInfo = getAttackChipInfo(event.target, event);
+  if (!attackInfo) return;
+  if (uiState.suppressNextAttackTap) {
+    uiState.suppressNextAttackTap = false;
+    return;
+  }
+  queueAttackTap(attackInfo);
+});
+document.addEventListener("pointercancel", () => {
+  clearLifePressTimer();
+  clearAttackPressTimer();
+});
+document.addEventListener("pointerleave", () => {
+  clearLifePressTimer();
+  clearAttackPressTimer();
+});
 
 document.addEventListener("dblclick", (event) => {
   const lifeCard = event.target.closest('.stat-card[data-control="life"]');
@@ -745,6 +870,10 @@ document.addEventListener("keydown", (event) => {
 
   if (event.key === "Escape" && uiState.maxLifePlayerId) {
     closeMaxLifeModal();
+  }
+
+  if (event.key === "Escape" && uiState.continuousPopup) {
+    closeContinuousModal();
   }
 });
 

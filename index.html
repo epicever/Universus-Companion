@@ -30,8 +30,8 @@
       <section class="center-panel" aria-label="Current attack and game actions">
         <div id="combat-bar" class="combat-bar glass-card attacker-p1">
           <div class="combat-readout combat-readout-p2 player-facing" aria-label="Player 2 attack values">
-            <div class="combat-chip damage-chip"><span>D</span><strong data-attack-field="damage">0</strong></div>
-            <div class="combat-chip speed-chip attack-icon-mid" data-speed-chip aria-label="Speed and attack zone"><span>S</span><strong data-attack-field="speed">0</strong></div>
+            <button class="combat-chip damage-chip" type="button" data-attack-chip="damage" data-player-side="p2" aria-label="Adjust attack damage"><span>D</span><strong data-attack-field="damage">0</strong></button>
+            <button class="combat-chip speed-chip attack-icon-mid" type="button" data-attack-chip="speed" data-player-side="p2" data-speed-chip aria-label="Adjust attack speed and attack zone"><span>S</span><strong data-attack-field="speed">0</strong></button>
           </div>
 
           <div class="brand-line">
@@ -45,8 +45,8 @@
           </div>
 
           <div class="combat-readout combat-readout-p1 player-facing" aria-label="Player 1 attack values">
-            <div class="combat-chip damage-chip"><span>D</span><strong data-attack-field="damage">0</strong></div>
-            <div class="combat-chip speed-chip attack-icon-mid" data-speed-chip aria-label="Speed and attack zone"><span>S</span><strong data-attack-field="speed">0</strong></div>
+            <button class="combat-chip damage-chip" type="button" data-attack-chip="damage" data-player-side="p1" aria-label="Adjust attack damage"><span>D</span><strong data-attack-field="damage">0</strong></button>
+            <button class="combat-chip speed-chip attack-icon-mid" type="button" data-attack-chip="speed" data-player-side="p1" data-speed-chip aria-label="Adjust attack speed and attack zone"><span>S</span><strong data-attack-field="speed">0</strong></button>
           </div>
           <div id="last-damage" class="last-damage">No damage yet</div>
         </div>
