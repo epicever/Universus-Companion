@@ -24,7 +24,6 @@ const uiState = {
   lastLifeTap: { playerId: null, time: 0 }
 };
 
-const controlNames = ["life", "counter"];
 const locationLabels = { high: "High", mid: "Mid", low: "Low" };
 const blockTable = {
   high: { high: "full", mid: "half", low: "none" },
@@ -206,8 +205,10 @@ function renderPlayer(playerId) {
 
   content.innerHTML = `
     <div class="controls-stack">
-      ${statAccordion(playerId, "life", "Life", `${player.life} / ${player.maxLife}`, lifeControls())}
-      ${statAccordion(playerId, "counter", "Counter", player.counter, stepperControls("counter-dec", "counter-inc", "Counter"))}
+      <div class="control-row quick-stats-row">
+        ${statTapCard(playerId, "life", "Life", `${player.life} / ${player.maxLife}`)}
+        ${statTapCard(playerId, "counter", "Counter", player.counter)}
+      </div>
       ${isAttacker ? attackerPanel(playerId) : defenderPanel()}
     </div>
   `;
@@ -231,6 +232,15 @@ function defenderPanel() {
       <button class="block-btn block-icon-mid loc-mid" data-action="block" data-location="mid" aria-label="Mid Block"><span>Mid Block</span></button>
       <button class="block-btn block-icon-low loc-low" data-action="block" data-location="low" aria-label="Low Block"><span>Low Block</span></button>
     </div>
+  `;
+}
+
+function statTapCard(playerId, controlName, label, value) {
+  return `
+    <button class="stat-card stat-tap-card" data-stat-tap="${controlName}" data-player="${playerId}" data-control="${controlName}" type="button" aria-label="${label}: left side subtracts, right side adds">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </button>
   `;
 }
 
@@ -454,11 +464,9 @@ function hasExpandedRow(playerId) {
 }
 
 function toggleControl(playerId, controlName) {
-  if (!playerId || !controlNames.includes(controlName)) return;
-  const rowId = getRowId(playerId, controlName);
-  uiState.expandedRowId = uiState.expandedRowId === rowId ? null : rowId;
-  render();
+  if (!playerId || !controlName) return;
 }
+
 
 function closeAllControls() {
   uiState.expandedRowId = null;
@@ -477,20 +485,6 @@ function closePlayerControls(playerId) {
 function handleAction(action, element) {
   const playerId = element.closest(".player-panel")?.dataset.player;
 
-  if (action === "toggle-control" && element.dataset.control === "life") {
-    if (uiState.suppressNextLifeClick) {
-      uiState.suppressNextLifeClick = false;
-      return;
-    }
-
-    const now = Date.now();
-    if (uiState.lastLifeTap.playerId === playerId && now - uiState.lastLifeTap.time < 360) {
-      uiState.lastLifeTap = { playerId: null, time: 0 };
-      openMaxLifeModal(playerId);
-      return;
-    }
-    uiState.lastLifeTap = { playerId, time: now };
-  }
 
   const actions = {
     "toggle-control": () => toggleControl(playerId, element.dataset.control),
@@ -733,7 +727,27 @@ function formatSigned(value) {
 }
 
 function getLifeCardPlayerId(element) {
-  return element.closest(".player-panel")?.dataset.player;
+  return element.closest(".player-panel")?.dataset.player || element.closest("[data-stat-tap]")?.dataset.player;
+}
+
+function getStatTapInfo(element, event) {
+  const card = element.closest("[data-stat-tap]");
+  if (!card) return null;
+  const rect = card.getBoundingClientRect();
+  return {
+    playerId: card.dataset.player,
+    stat: card.dataset.statTap,
+    pointerSide: event.clientX < rect.left + rect.width / 2 ? "left" : "right"
+  };
+}
+
+function applyStatCardTap(info) {
+  if (!info?.playerId) return;
+  if (info.stat === "life") {
+    changePlayerValue(info.playerId, "life", info.pointerSide === "left" ? -1 : 1, 0, 999);
+  } else if (info.stat === "counter") {
+    changePlayerValue(info.playerId, "counter", info.pointerSide === "left" ? -1 : 1, -999, 999);
+  }
 }
 
 function clearLifePressTimer() {
@@ -802,12 +816,21 @@ document.addEventListener("pointerup", (event) => {
   clearLifePressTimer();
   clearAttackPressTimer();
   const attackInfo = getAttackChipInfo(event.target, event);
-  if (!attackInfo) return;
-  if (uiState.suppressNextAttackTap) {
-    uiState.suppressNextAttackTap = false;
+  if (attackInfo) {
+    if (uiState.suppressNextAttackTap) {
+      uiState.suppressNextAttackTap = false;
+      return;
+    }
+    applyAttackChipTap(attackInfo);
     return;
   }
-  applyAttackChipTap(attackInfo);
+
+  const statInfo = getStatTapInfo(event.target, event);
+  if (statInfo?.stat === "life" && uiState.suppressNextLifeClick) {
+    uiState.suppressNextLifeClick = false;
+    return;
+  }
+  applyStatCardTap(statInfo);
 });
 document.addEventListener("pointercancel", () => {
   clearLifePressTimer();
