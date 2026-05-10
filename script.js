@@ -303,7 +303,7 @@ function locationControls() {
 
 function locationButton(location, label) {
   const active = state.attack.location === location ? "active" : "";
-  return `<button class="control-btn location-btn attack-icon-${location} loc-${location} ${active}" data-action="set-location" data-location="${location}" aria-label="${label} attack location"><span>${label}</span></button>`;
+  return `<button class="control-btn location-btn loc-${location} ${active}" data-action="set-location" data-location="${location}">${label}</button>`;
 }
 
 function animatePendingHit() {

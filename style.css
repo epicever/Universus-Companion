@@ -416,32 +416,6 @@ input {
   transform: translateY(1px) scale(0.985);
 }
 
-.location-btn {
-  position: relative;
-  overflow: hidden;
-  font-size: 0;
-}
-
-.location-btn::before {
-  content: "";
-  position: absolute;
-  inset: 0.18rem;
-  background-image: var(--attack-location-icon);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.14));
-}
-
-.location-btn span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 .max-life-input {
   height: 2.45rem;
   min-height: 0;
@@ -649,19 +623,16 @@ input {
 }
 
 .attack-icon-high {
-  --attack-location-icon: var(--attack-high-icon);
   --speed-attack-icon: var(--attack-high-icon);
   border-color: rgba(251, 59, 95, 0.52);
 }
 
 .attack-icon-mid {
-  --attack-location-icon: var(--attack-mid-icon);
   --speed-attack-icon: var(--attack-mid-icon);
   border-color: rgba(251, 146, 60, 0.52);
 }
 
 .attack-icon-low {
-  --attack-location-icon: var(--attack-low-icon);
   --speed-attack-icon: var(--attack-low-icon);
   border-color: rgba(250, 204, 21, 0.52);
 }
