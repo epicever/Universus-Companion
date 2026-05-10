@@ -21,8 +21,7 @@ const uiState = {
   attackPressTimer: null,
   suppressNextLifeClick: false,
   suppressNextAttackTap: false,
-  lastLifeTap: { playerId: null, time: 0 },
-  attackTap: { key: null, count: 0, timer: null, pointerSide: "right" }
+  lastLifeTap: { playerId: null, time: 0 }
 };
 
 const controlNames = ["life", "counter"];
@@ -765,49 +764,12 @@ function clearAttackPressTimer() {
   uiState.attackPressTimer = null;
 }
 
-function clearAttackTapTimer() {
-  if (!uiState.attackTap.timer) return;
-  clearTimeout(uiState.attackTap.timer);
-  uiState.attackTap.timer = null;
-}
-
-function queueAttackTap(info) {
+function applyAttackChipTap(info) {
   if (!info) return;
-  const key = `${info.playerId}:${info.stat}`;
-  if (uiState.attackTap.key !== key) {
-    clearAttackTapTimer();
-    uiState.attackTap = { key, count: 0, timer: null, pointerSide: info.pointerSide };
-  }
-
-  uiState.attackTap.count += 1;
-  uiState.attackTap.pointerSide = info.pointerSide;
-
-  if (uiState.attackTap.count >= 3) {
-    applyQueuedAttackTap();
-    return;
-  }
-
-  clearAttackTapTimer();
-  uiState.attackTap.timer = setTimeout(applyQueuedAttackTap, 360);
-}
-
-function applyQueuedAttackTap() {
-  const { key, count, pointerSide } = uiState.attackTap;
-  clearAttackTapTimer();
-  uiState.attackTap = { key: null, count: 0, timer: null, pointerSide: "right" };
-  if (!key || count < 1) return;
-
-  const stat = key.split(":")[1];
-  const stateKey = getAttackStateKey(stat);
+  const stateKey = getAttackStateKey(info.stat);
   if (!stateKey) return;
 
-  if (count >= 2) {
-    const continuousKey = stat === "damage" ? "damageBonus" : "speedBonus";
-    changeContinuousValue(continuousKey, count >= 3 ? -1 : 1);
-    return;
-  }
-
-  changeAttackValue(stateKey, pointerSide === "left" ? -1 : 1);
+  changeAttackValue(stateKey, info.pointerSide === "left" ? -1 : 1);
 }
 
 // ---------- Event delegation ----------
@@ -818,8 +780,6 @@ document.addEventListener("pointerdown", (event) => {
     uiState.attackPressTimer = setTimeout(() => {
       uiState.attackPressTimer = null;
       uiState.suppressNextAttackTap = true;
-      clearAttackTapTimer();
-      uiState.attackTap = { key: null, count: 0, timer: null, pointerSide: "right" };
       openContinuousModal(attackInfo.playerId, attackInfo.stat);
     }, 1000);
     return;
@@ -847,7 +807,7 @@ document.addEventListener("pointerup", (event) => {
     uiState.suppressNextAttackTap = false;
     return;
   }
-  queueAttackTap(attackInfo);
+  applyAttackChipTap(attackInfo);
 });
 document.addEventListener("pointercancel", () => {
   clearLifePressTimer();
