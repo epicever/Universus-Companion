@@ -2,8 +2,8 @@ const STORAGE_KEY = "universus-companion-state-v1";
 
 const defaultState = {
   players: {
-    p1: { name: "Player 1", life: 30, maxLife: 30, counter: 0, image: null },
-    p2: { name: "Player 2", life: 30, maxLife: 30, counter: 0, image: null }
+    p1: { name: "Player 1", life: 30, maxLife: 30, counter: 0, progressiveDifficulty: 0, image: null },
+    p2: { name: "Player 2", life: 30, maxLife: 30, counter: 0, progressiveDifficulty: 0, image: null }
   },
   turnPlayer: "p1",
   attack: { baseDamage: 0, baseSpeed: 0, location: "mid" },
@@ -87,6 +87,7 @@ function sanitizeState(nextState) {
     player.maxLife = clampNumber(player.maxLife, 1, 999);
     player.life = clampNumber(player.life, 0, 999);
     player.counter = clampNumber(player.counter, -999, 999);
+    player.progressiveDifficulty = clampNumber(player.progressiveDifficulty, -999, 999);
     player.name = String(player.name || defaultState.players[playerId].name).slice(0, 24);
     player.image = typeof player.image === "string" && player.image.startsWith("data:image/") ? player.image : null;
   });
@@ -206,6 +207,7 @@ function renderPlayer(playerId) {
   content.innerHTML = `
     <div class="controls-stack">
       <div class="control-row quick-stats-row">
+        ${statTapCard(playerId, "progressiveDifficulty", "Prog", player.progressiveDifficulty)}
         ${statTapCard(playerId, "life", "Life", `${player.life} / ${player.maxLife}`)}
         ${statTapCard(playerId, "counter", "Counter", player.counter)}
       </div>
@@ -628,6 +630,10 @@ function resolvePendingBlock(success) {
 
   updateState((nextState) => {
     nextState.players[defenderId].life = Math.max(0, nextState.players[defenderId].life - result.damageTaken);
+    nextState.players[state.turnPlayer].progressiveDifficulty += 1;
+    if (success) {
+      nextState.players[defenderId].progressiveDifficulty += 1;
+    }
     nextState.meta.lastDamage = { defenderId, blockLocation, bonus, difficulty, success, ...result };
     nextState.meta.lastHitPlayer = defenderId;
     resetAttackValues(nextState);
@@ -664,6 +670,7 @@ function resetGame() {
     ["p1", "p2"].forEach((playerId) => {
       nextState.players[playerId].life = nextState.players[playerId].maxLife;
       nextState.players[playerId].counter = 0;
+      nextState.players[playerId].progressiveDifficulty = 0;
     });
     resetAttackValues(nextState);
     nextState.continuous.damageBonus = 0;
@@ -747,6 +754,8 @@ function applyStatCardTap(info) {
     changePlayerValue(info.playerId, "life", info.pointerSide === "left" ? -1 : 1, 0, 999);
   } else if (info.stat === "counter") {
     changePlayerValue(info.playerId, "counter", info.pointerSide === "left" ? -1 : 1, -999, 999);
+  } else if (info.stat === "progressiveDifficulty") {
+    changePlayerValue(info.playerId, "progressiveDifficulty", info.pointerSide === "left" ? -1 : 1, -999, 999);
   }
 }
 

@@ -240,7 +240,7 @@ input {
 
 .quick-stats-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(0.28rem, 0.8vw, 0.5rem);
 }
 
@@ -388,13 +388,13 @@ input {
   left: 50%;
   transform: translateX(-50%);
   z-index: 1;
-  font-size: clamp(0.5rem, 12cqh, 0.95rem);
+  font-size: clamp(0.52rem, 13cqh, 1rem);
 }
 
 .stat-tap-card strong {
   justify-self: center;
   align-self: center;
-  font-size: clamp(1.4rem, 58cqh, 4.8rem);
+  font-size: clamp(1.9rem, 72cqh, 6rem);
   text-align: center;
 }
 
@@ -745,6 +745,11 @@ input {
   line-height: 1;
 }
 
+
+
+.speed-chip strong {
+  transform: translateX(-0.55rem);
+}
 
 .damage-chip {
   border-color: rgba(251, 146, 60, 0.58);
