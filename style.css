@@ -233,9 +233,12 @@ input {
   overflow: hidden;
 }
 
- .player-panel.is-attacker .controls-stack,
-.player-panel:not(.is-attacker) .controls-stack {
+.player-panel.is-attacker .controls-stack {
   grid-template-rows: minmax(0, 0.82fr) minmax(0, 1fr);
+}
+
+.player-panel:not(.is-attacker) .controls-stack {
+  grid-template-rows: minmax(0, 0.72fr) minmax(0, 1fr) minmax(0, 0.58fr);
 }
 
 .quick-stats-row {
@@ -548,8 +551,30 @@ input {
   font-weight: 900;
 }
 
-.block-row {
+.block-row,
+.no-block-row {
   min-height: 0;
+}
+
+
+.no-block-btn {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid rgba(251, 146, 60, 0.42);
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(127, 29, 29, 0.16));
+  box-shadow: 0 0 24px rgba(251, 146, 60, 0.12), 0 10px 24px rgba(0, 0, 0, 0.2);
+  color: #fed7aa;
+  font-size: clamp(0.9rem, 32cqh, 1.65rem);
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  touch-action: manipulation;
+}
+
+.no-block-btn:active {
+  transform: translateY(1px) scale(0.985);
 }
 
 .block-btn {

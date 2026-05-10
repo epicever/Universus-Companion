@@ -207,7 +207,7 @@ function renderPlayer(playerId) {
   content.innerHTML = `
     <div class="controls-stack">
       <div class="control-row quick-stats-row">
-        ${statTapCard(playerId, "progressiveDifficulty", "Prog", player.progressiveDifficulty)}
+        ${statTapCard(playerId, "progressiveDifficulty", "Prog Diff", player.progressiveDifficulty)}
         ${statTapCard(playerId, "life", "Life", `${player.life} / ${player.maxLife}`)}
         ${statTapCard(playerId, "counter", "Counter", player.counter)}
       </div>
@@ -233,6 +233,9 @@ function defenderPanel() {
       <button class="block-btn block-icon-high loc-high" data-action="block" data-location="high" aria-label="High Block"><span>High Block</span></button>
       <button class="block-btn block-icon-mid loc-mid" data-action="block" data-location="mid" aria-label="Mid Block"><span>Mid Block</span></button>
       <button class="block-btn block-icon-low loc-low" data-action="block" data-location="low" aria-label="Low Block"><span>Low Block</span></button>
+    </div>
+    <div class="control-row no-block-row" aria-label="No block controls">
+      <button class="no-block-btn" data-action="no-block" type="button">No Block</button>
     </div>
   `;
 }
@@ -425,9 +428,9 @@ function renderBlockModal() {
         <button class="btn btn-xs btn-ghost" data-action="close-block-modal" aria-label="Cancel block">✕</button>
       </header>
       <div class="difficulty-readout block-icon-${blockLocation}">
-        <span>Difficulty</span>
+        <span>Difficulty Check</span>
         <strong>${difficulty}</strong>
-        <small>${formatSigned(bonus)} block + ${getFinalSpeed()} speed</small>
+        <small>${formatSigned(bonus)} block + ${getFinalSpeed()} speed + ${state.players[getDefenderId()].progressiveDifficulty} prog diff</small>
       </div>
       <div class="block-result-actions">
         <button class="btn btn-success" data-action="block-success">Success</button>
@@ -511,6 +514,7 @@ function handleAction(action, element) {
     "block-bonus": () => chooseBlockBonus(element.dataset.bonus),
     "block-success": () => resolvePendingBlock(true),
     "block-fail": () => resolvePendingBlock(false),
+    "no-block": resolveNoBlock,
     "close-block-modal": closeBlockModal,
     "close-max-life-modal": closeMaxLifeModal,
     "close-continuous-modal": closeContinuousModal,
@@ -573,7 +577,7 @@ function chooseBlockBonus(rawBonus) {
   uiState.pendingBlock = {
     ...uiState.pendingBlock,
     bonus,
-    difficulty: bonus + getFinalSpeed()
+    difficulty: bonus + getFinalSpeed() + state.players[getDefenderId()].progressiveDifficulty
   };
   renderBlockModal();
 }
@@ -612,6 +616,33 @@ function changeContinuousFromPopup(delta) {
   const key = stat === "damage" ? "damageBonus" : stat === "speed" ? "speedBonus" : null;
   if (!key) return;
   changeContinuousValue(key, delta);
+}
+
+function resolveNoBlock() {
+  const defenderId = getDefenderId();
+  const damageTaken = getFinalDamage();
+  pendingHitPlayer = defenderId;
+  closePlayerControls(defenderId);
+  uiState.pendingBlock = null;
+
+  updateState((nextState) => {
+    nextState.players[defenderId].life = Math.max(0, nextState.players[defenderId].life - damageTaken);
+    nextState.players[state.turnPlayer].progressiveDifficulty += 1;
+    nextState.meta.lastDamage = {
+      defenderId,
+      blockLocation: "none",
+      bonus: null,
+      difficulty: null,
+      success: false,
+      blockQuality: "no-block",
+      blockedAmount: 0,
+      damageTaken
+    };
+    nextState.meta.lastHitPlayer = defenderId;
+    resetAttackValues(nextState);
+  });
+
+  vibrateOnHit(damageTaken);
 }
 
 function resolvePendingBlock(success) {
