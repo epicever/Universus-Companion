@@ -6,7 +6,7 @@ const defaultState = {
     p2: { name: "Player 2", life: 30, maxLife: 30, counter: 0, progressiveDifficulty: 0, image: null }
   },
   turnPlayer: "p1",
-  attack: { baseDamage: 0, baseSpeed: 0, location: "mid" },
+  attack: { baseDamage: 3, baseSpeed: 3, location: "mid", throw: false },
   continuous: { damageBonus: 0, speedBonus: 0 },
   meta: { lastDamage: null, lastHitPlayer: null, healthDefaultVersion: 30 }
 };
@@ -95,6 +95,7 @@ function sanitizeState(nextState) {
   merged.attack.baseDamage = clampNumber(merged.attack.baseDamage, -99, 999);
   merged.attack.baseSpeed = clampNumber(merged.attack.baseSpeed, -99, 999);
   merged.attack.location = locationLabels[merged.attack.location] ? merged.attack.location : "mid";
+  merged.attack.throw = Boolean(merged.attack.throw);
   merged.continuous.damageBonus = clampNumber(merged.continuous.damageBonus, -99, 999);
   merged.continuous.speedBonus = clampNumber(merged.continuous.speedBonus, -99, 999);
 
@@ -128,19 +129,27 @@ function getDefenderId() {
 function getBlockResult(blockLocation) {
   const finalDamage = getFinalDamage();
   const blockQuality = blockTable[state.attack.location][blockLocation];
-  const blockedAmount = blockQuality === "full" ? finalDamage : blockQuality === "half" ? Math.floor(finalDamage / 2) : 0;
+  const throwFullBlock = state.attack.throw && blockQuality === "full";
+  const blockedAmount = throwFullBlock
+    ? Math.floor(finalDamage / 2)
+    : blockQuality === "full"
+      ? finalDamage
+      : blockQuality === "half"
+        ? Math.floor(finalDamage / 2)
+        : 0;
 
   return {
-    blockQuality,
+    blockQuality: throwFullBlock ? "throw" : blockQuality,
     blockedAmount,
     damageTaken: Math.max(0, finalDamage - blockedAmount)
   };
 }
 
 function resetAttackValues(nextState) {
-  nextState.attack.baseDamage = 0;
-  nextState.attack.baseSpeed = 0;
+  nextState.attack.baseDamage = 3;
+  nextState.attack.baseSpeed = 3;
   nextState.attack.location = "mid";
+  nextState.attack.throw = false;
 }
 
 // ---------- Rendering ----------
@@ -228,16 +237,24 @@ function attackerPanel() {
 }
 
 function defenderPanel() {
+  const blockButtons = [
+    state.attack.location !== "low" ? blockButton("high", "High Block") : "",
+    blockButton("mid", "Mid Block"),
+    state.attack.location !== "high" ? blockButton("low", "Low Block") : ""
+  ].join("");
+
   return `
     <div class="control-row block-row" aria-label="Defending player block controls">
-      <button class="block-btn block-icon-high loc-high" data-action="block" data-location="high" aria-label="High Block"><span>High Block</span></button>
-      <button class="block-btn block-icon-mid loc-mid" data-action="block" data-location="mid" aria-label="Mid Block"><span>Mid Block</span></button>
-      <button class="block-btn block-icon-low loc-low" data-action="block" data-location="low" aria-label="Low Block"><span>Low Block</span></button>
+      ${blockButtons}
     </div>
     <div class="control-row no-block-row" aria-label="No block controls">
       <button class="no-block-btn" data-action="no-block" type="button">No Block</button>
     </div>
   `;
+}
+
+function blockButton(location, label) {
+  return `<button class="block-btn block-icon-${location} loc-${location}" data-action="block" data-location="${location}" aria-label="${label}"><span>${label}</span></button>`;
 }
 
 function statTapCard(playerId, controlName, label, value) {
@@ -280,11 +297,13 @@ function lifeControls() {
 }
 
 function locationControls() {
+  const throwActive = state.attack.throw ? "active" : "";
   return `
-    <div class="control-strip three-up">
+    <div class="control-strip location-controls">
       ${locationButton("high", "High")}
       ${locationButton("mid", "Mid")}
       ${locationButton("low", "Low")}
+      <button class="control-btn throw-btn ${throwActive}" data-action="toggle-throw" type="button" aria-pressed="${state.attack.throw}">Throw</button>
     </div>
   `;
 }
@@ -510,6 +529,7 @@ function handleAction(action, element) {
     "cont-popup-inc": () => changeContinuousFromPopup(1),
     "cont-popup-dec": () => changeContinuousFromPopup(-1),
     "set-location": () => setAttackLocation(element.dataset.location),
+    "toggle-throw": toggleThrow,
     block: () => openBlockBonusPicker(element.dataset.location),
     "block-bonus": () => chooseBlockBonus(element.dataset.bonus),
     "block-success": () => resolvePendingBlock(true),
@@ -562,6 +582,12 @@ function setAttackLocation(location) {
   if (!locationLabels[location]) return;
   updateState((nextState) => {
     nextState.attack.location = location;
+  });
+}
+
+function toggleThrow() {
+  updateState((nextState) => {
+    nextState.attack.throw = !nextState.attack.throw;
   });
 }
 
@@ -679,6 +705,9 @@ function endTurn() {
     resetAttackValues(nextState);
     nextState.continuous.damageBonus = 0;
     nextState.continuous.speedBonus = 0;
+    ["p1", "p2"].forEach((playerId) => {
+      nextState.players[playerId].progressiveDifficulty = 0;
+    });
     nextState.turnPlayer = nextState.turnPlayer === "p1" ? "p2" : "p1";
     nextState.meta.lastDamage = null;
   });

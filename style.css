@@ -473,9 +473,16 @@ input {
   grid-template-columns: 1fr 1fr;
 }
 
-.three-up,
-.block-row {
+.three-up {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.location-controls {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.block-row {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 }
 
 .four-up {
@@ -511,9 +518,25 @@ input {
   height: 100%;
 }
 
-.location-row .location-btn {
+.location-row .location-btn,
+.location-row .throw-btn {
   height: 100%;
   min-height: 0;
+}
+
+
+.throw-btn {
+  border-color: rgba(34, 211, 238, 0.32);
+  color: #a5f3fc;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.throw-btn.active {
+  border-color: rgba(34, 211, 238, 0.72);
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.36), rgba(79, 70, 229, 0.22));
+  box-shadow: 0 0 34px rgba(34, 211, 238, 0.28), 0 10px 24px rgba(0, 0, 0, 0.2);
+  color: #ecfeff;
 }
 
 .control-btn.location-btn {
@@ -1044,7 +1067,22 @@ input {
   }
 
 
-  .control-btn.location-btn {
+
+.throw-btn {
+  border-color: rgba(34, 211, 238, 0.32);
+  color: #a5f3fc;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.throw-btn.active {
+  border-color: rgba(34, 211, 238, 0.72);
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.36), rgba(79, 70, 229, 0.22));
+  box-shadow: 0 0 34px rgba(34, 211, 238, 0.28), 0 10px 24px rgba(0, 0, 0, 0.2);
+  color: #ecfeff;
+}
+
+.control-btn.location-btn {
     color: transparent;
     font-size: 0;
     text-indent: -9999px;
