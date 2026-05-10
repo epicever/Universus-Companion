@@ -13,10 +13,14 @@ const defaultState = {
 
 const uiState = {
   expandedRowId: null,
-  pendingBlock: null
+  pendingBlock: null,
+  maxLifePlayerId: null,
+  lifePressTimer: null,
+  suppressNextLifeClick: false,
+  lastLifeTap: { playerId: null, time: 0 }
 };
 
-const controlNames = ["life", "counter", "damage", "speed", "location", "continuous", "maxLife"];
+const controlNames = ["life", "counter", "damage", "speed", "location", "continuous"];
 const locationLabels = { high: "High", mid: "Mid", low: "Low" };
 const blockTable = {
   high: { high: "full", mid: "half", low: "none" },
@@ -198,9 +202,8 @@ function renderPlayer(playerId) {
 
   content.innerHTML = `
     <div class="controls-stack">
-      ${statAccordion(playerId, "life", "Life", `${player.life} / ${player.maxLife}`, lifeControls())}
+      ${statAccordion(playerId, "life", "Life", `${player.life} / ${player.maxLife}`, lifeControls(), "Hold or double-tap Life to set max health")}
       ${statAccordion(playerId, "counter", "Counter", player.counter, stepperControls("counter-dec", "counter-inc", "Counter"))}
-      ${statAccordion(playerId, "maxLife", "Max", player.maxLife, maxLifeControls(player.maxLife))}
       ${isAttacker ? attackerPanel(playerId) : defenderPanel()}
     </div>
   `;
@@ -242,7 +245,7 @@ function defenderAdjustCard(label, value, decAction, incAction) {
   `;
 }
 
-function statAccordion(playerId, controlName, label, value, controlsMarkup) {
+function statAccordion(playerId, controlName, label, value, controlsMarkup, hint = "") {
   const rowId = getRowId(playerId, controlName);
   const isOpen = uiState.expandedRowId === rowId;
   return `
@@ -250,6 +253,7 @@ function statAccordion(playerId, controlName, label, value, controlsMarkup) {
       <button class="stat-card" data-action="toggle-control" data-control="${controlName}" aria-expanded="${isOpen}">
         <span>${label}</span>
         <strong>${value}</strong>
+        ${hint ? `<small>${hint}</small>` : ""}
       </button>
       <div class="accordion-body" aria-hidden="${!isOpen}">
         <div class="accordion-inner">${isOpen ? controlsMarkup : ""}</div>
@@ -269,15 +273,6 @@ function stepperControls(decAction, incAction, label) {
 
 function lifeControls() {
   return stepperControls("life-dec", "life-inc", "Life");
-}
-
-function maxLifeControls(maxLife) {
-  return `
-    <div class="control-strip max-life-controls">
-      <input class="input input-bordered input-sm max-life-input" type="number" min="1" max="999" inputmode="numeric" value="${maxLife}" aria-label="Max life" />
-      <button class="control-btn set-btn" data-action="set-max-life">Set</button>
-    </div>
-  `;
 }
 
 function continuousControls() {
@@ -306,9 +301,46 @@ function locationButton(location, label) {
   return `<button class="control-btn location-btn attack-icon-${location} loc-${location} ${active}" data-action="set-location" data-location="${location}" aria-label="${label} attack location" title="${label} attack location"></button>`;
 }
 
+function renderMaxLifeModal() {
+  const playerId = uiState.maxLifePlayerId;
+  const player = state.players[playerId];
+
+  if (!player) return false;
+
+  blockModal.classList.remove("hidden");
+  blockModal.classList.toggle("max-life-p2", playerId === "p2");
+  blockModal.classList.toggle("max-life-p1", playerId === "p1");
+  blockModal.classList.remove("defender-p1", "defender-p2");
+  blockModal.innerHTML = `
+    <div class="block-modal-backdrop" data-action="close-max-life-modal"></div>
+    <div class="block-modal-card max-life-modal-card glass-card" role="dialog" aria-modal="true" aria-label="Set ${player.name} max health">
+      <header class="block-modal-header">
+        <span>${player.name} Max Health</span>
+        <button class="btn btn-xs btn-ghost" data-action="close-max-life-modal" aria-label="Cancel max health">✕</button>
+      </header>
+      <p class="block-modal-copy">Current life: ${player.life} / ${player.maxLife}</p>
+      <div class="control-strip max-life-controls max-life-popup-controls">
+        <input class="input input-bordered input-sm max-life-input" type="number" min="1" max="999" inputmode="numeric" value="${player.maxLife}" aria-label="Max life" />
+        <button class="control-btn set-btn" data-action="set-max-life-popup" data-player="${playerId}">Set</button>
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    const input = blockModal.querySelector(".max-life-input");
+    input?.focus();
+    input?.select();
+  });
+
+  return true;
+}
+
 function renderBlockModal() {
+  if (renderMaxLifeModal()) return;
+
   blockModal.classList.toggle("defender-p2", getDefenderId() === "p2");
   blockModal.classList.toggle("defender-p1", getDefenderId() === "p1");
+  blockModal.classList.remove("max-life-p1", "max-life-p2");
 
   if (!uiState.pendingBlock) {
     blockModal.classList.add("hidden");
@@ -395,6 +427,7 @@ function toggleControl(playerId, controlName) {
 function closeAllControls() {
   uiState.expandedRowId = null;
   uiState.pendingBlock = null;
+  uiState.maxLifePlayerId = null;
 }
 
 function closePlayerControls(playerId) {
@@ -406,6 +439,21 @@ function closePlayerControls(playerId) {
 function handleAction(action, element) {
   const playerId = element.closest(".player-panel")?.dataset.player;
 
+  if (action === "toggle-control" && element.dataset.control === "life") {
+    if (uiState.suppressNextLifeClick) {
+      uiState.suppressNextLifeClick = false;
+      return;
+    }
+
+    const now = Date.now();
+    if (uiState.lastLifeTap.playerId === playerId && now - uiState.lastLifeTap.time < 360) {
+      uiState.lastLifeTap = { playerId: null, time: 0 };
+      openMaxLifeModal(playerId);
+      return;
+    }
+    uiState.lastLifeTap = { playerId, time: now };
+  }
+
   const actions = {
     "toggle-control": () => toggleControl(playerId, element.dataset.control),
     "choose-image": () => chooseImage(playerId, element),
@@ -413,7 +461,7 @@ function handleAction(action, element) {
     "life-dec": () => changePlayerValue(playerId, "life", -1, 0, 999),
     "counter-inc": () => changePlayerValue(playerId, "counter", 1, -999, 999),
     "counter-dec": () => changePlayerValue(playerId, "counter", -1, -999, 999),
-    "set-max-life": () => setMaxLife(playerId, element),
+    "set-max-life-popup": () => setMaxLifeFromPopup(element.dataset.player, element),
     "base-damage-inc": () => changeAttackValue("baseDamage", 1),
     "base-damage-dec": () => changeAttackValue("baseDamage", -1),
     "base-speed-inc": () => changeAttackValue("baseSpeed", 1),
@@ -428,6 +476,7 @@ function handleAction(action, element) {
     "block-success": () => resolvePendingBlock(true),
     "block-fail": () => resolvePendingBlock(false),
     "close-block-modal": closeBlockModal,
+    "close-max-life-modal": closeMaxLifeModal,
     "end-turn": endTurn,
     "reset-game": resetGame
   };
@@ -442,11 +491,12 @@ function changePlayerValue(playerId, key, delta, min, max) {
   });
 }
 
-function setMaxLife(playerId, element) {
+function setMaxLifeFromPopup(playerId, element) {
   if (!playerId) return;
-  const input = element.closest(".accordion-inner").querySelector(".max-life-input");
+  const input = element.closest(".max-life-modal-card").querySelector(".max-life-input");
   const maxLife = clampNumber(input.value, 1, 999);
 
+  uiState.maxLifePlayerId = null;
   updateState((nextState) => {
     nextState.players[playerId].maxLife = maxLife;
     nextState.players[playerId].life = maxLife;
@@ -491,6 +541,18 @@ function chooseBlockBonus(rawBonus) {
 
 function closeBlockModal() {
   uiState.pendingBlock = null;
+  renderBlockModal();
+}
+
+function openMaxLifeModal(playerId) {
+  if (!state.players[playerId]) return;
+  closeAllControls();
+  uiState.maxLifePlayerId = playerId;
+  renderBlockModal();
+}
+
+function closeMaxLifeModal() {
+  uiState.maxLifePlayerId = null;
   renderBlockModal();
 }
 
@@ -597,7 +659,42 @@ function formatSigned(value) {
   return value >= 0 ? `+${value}` : String(value);
 }
 
+function getLifeCardPlayerId(element) {
+  return element.closest(".player-panel")?.dataset.player;
+}
+
+function clearLifePressTimer() {
+  if (!uiState.lifePressTimer) return;
+  clearTimeout(uiState.lifePressTimer);
+  uiState.lifePressTimer = null;
+}
+
 // ---------- Event delegation ----------
+document.addEventListener("pointerdown", (event) => {
+  const lifeCard = event.target.closest('.stat-card[data-control="life"]');
+  if (!lifeCard) return;
+  const playerId = getLifeCardPlayerId(lifeCard);
+  if (!playerId) return;
+
+  clearLifePressTimer();
+  uiState.lifePressTimer = setTimeout(() => {
+    uiState.lifePressTimer = null;
+    uiState.suppressNextLifeClick = true;
+    openMaxLifeModal(playerId);
+  }, 1000);
+});
+
+document.addEventListener("pointerup", clearLifePressTimer);
+document.addEventListener("pointercancel", clearLifePressTimer);
+document.addEventListener("pointerleave", clearLifePressTimer);
+
+document.addEventListener("dblclick", (event) => {
+  const lifeCard = event.target.closest('.stat-card[data-control="life"]');
+  if (!lifeCard) return;
+  event.preventDefault();
+  openMaxLifeModal(getLifeCardPlayerId(lifeCard));
+});
+
 document.addEventListener("click", (event) => {
   const actionable = event.target.closest("[data-action]");
   if (!actionable) return;
@@ -639,6 +736,15 @@ document.addEventListener("change", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && event.target.matches(".player-name")) {
     event.target.blur();
+  }
+
+  if (event.key === "Enter" && event.target.matches(".max-life-modal-card .max-life-input")) {
+    const button = event.target.closest(".max-life-modal-card")?.querySelector('[data-action="set-max-life-popup"]');
+    button?.click();
+  }
+
+  if (event.key === "Escape" && uiState.maxLifePlayerId) {
+    closeMaxLifeModal();
   }
 });
 

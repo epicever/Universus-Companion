@@ -234,35 +234,34 @@ input {
 }
 
 .player-panel.is-attacker .controls-stack {
-  grid-template-rows: repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(6, minmax(0, 1fr));
 }
 
 .player-panel:not(.is-attacker) .controls-stack {
-  grid-template-rows: repeat(3, minmax(0, 1fr)) minmax(0, 1.05fr) minmax(0, 1.2fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr)) minmax(0, 1.05fr) minmax(0, 1.2fr);
 }
 
 .player-panel.is-attacker .controls-stack:has(.control-row.expanded) {
-  grid-template-rows: repeat(7, minmax(0, 0.58fr));
+  grid-template-rows: repeat(6, minmax(0, 0.58fr));
 }
 
 .player-panel:not(.is-attacker) .controls-stack:has(.control-row.expanded) {
-  grid-template-rows: repeat(3, minmax(0, 0.58fr)) minmax(0, 0.68fr) minmax(0, 0.76fr);
+  grid-template-rows: repeat(2, minmax(0, 0.58fr)) minmax(0, 0.68fr) minmax(0, 0.76fr);
 }
 
-.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(1).expanded) { grid-template-rows: minmax(0, 2.55fr) repeat(6, minmax(0, 0.58fr)); }
-.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(2).expanded) { grid-template-rows: minmax(0, 0.58fr) minmax(0, 2.55fr) repeat(5, minmax(0, 0.58fr)); }
-.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(3).expanded) { grid-template-rows: repeat(2, minmax(0, 0.58fr)) minmax(0, 2.55fr) repeat(4, minmax(0, 0.58fr)); }
-.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(4).expanded) { grid-template-rows: repeat(3, minmax(0, 0.58fr)) minmax(0, 2.55fr) repeat(3, minmax(0, 0.58fr)); }
-.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(5).expanded) { grid-template-rows: repeat(4, minmax(0, 0.58fr)) minmax(0, 2.55fr) repeat(2, minmax(0, 0.58fr)); }
-.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(6).expanded) { grid-template-rows: repeat(5, minmax(0, 0.58fr)) minmax(0, 2.55fr) minmax(0, 0.58fr); }
-.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(7).expanded) { grid-template-rows: repeat(6, minmax(0, 0.58fr)) minmax(0, 2.55fr); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(1).expanded) { grid-template-rows: minmax(0, 2.55fr) repeat(5, minmax(0, 0.58fr)); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(2).expanded) { grid-template-rows: minmax(0, 0.58fr) minmax(0, 2.55fr) repeat(4, minmax(0, 0.58fr)); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(3).expanded) { grid-template-rows: repeat(2, minmax(0, 0.58fr)) minmax(0, 2.55fr) repeat(3, minmax(0, 0.58fr)); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(4).expanded) { grid-template-rows: repeat(3, minmax(0, 0.58fr)) minmax(0, 2.55fr) repeat(2, minmax(0, 0.58fr)); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(5).expanded) { grid-template-rows: repeat(4, minmax(0, 0.58fr)) minmax(0, 2.55fr) minmax(0, 0.58fr); }
+.player-panel.is-attacker .controls-stack:has(.control-row:nth-child(6).expanded) { grid-template-rows: repeat(5, minmax(0, 0.58fr)) minmax(0, 2.55fr); }
 
 
-.player-panel:not(.is-attacker) .controls-stack:has(.control-row:nth-child(1).expanded) { grid-template-rows: minmax(0, 2.35fr) repeat(2, minmax(0, 0.58fr)) minmax(0, 0.68fr) minmax(0, 0.76fr); }
-.player-panel:not(.is-attacker) .controls-stack:has(.control-row:nth-child(2).expanded) { grid-template-rows: minmax(0, 0.58fr) minmax(0, 2.35fr) minmax(0, 0.58fr) minmax(0, 0.68fr) minmax(0, 0.76fr); }
-.player-panel:not(.is-attacker) .controls-stack:has(.control-row:nth-child(3).expanded) { grid-template-rows: repeat(2, minmax(0, 0.58fr)) minmax(0, 2.35fr) minmax(0, 0.68fr) minmax(0, 0.76fr); }
+.player-panel:not(.is-attacker) .controls-stack:has(.control-row:nth-child(1).expanded) { grid-template-rows: minmax(0, 2.35fr) minmax(0, 0.58fr) minmax(0, 0.68fr) minmax(0, 0.76fr); }
+.player-panel:not(.is-attacker) .controls-stack:has(.control-row:nth-child(2).expanded) { grid-template-rows: minmax(0, 0.58fr) minmax(0, 2.35fr) minmax(0, 0.68fr) minmax(0, 0.76fr); }
 
 .control-row {
+  container-type: size;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
@@ -317,7 +316,7 @@ input {
 
 .defender-adjust-readout span {
   color: #94a3b8;
-  font-size: 0.58rem;
+  font-size: clamp(0.5rem, 14cqh, 0.95rem);
   font-weight: 900;
   letter-spacing: 0.09em;
   line-height: 1;
@@ -326,7 +325,7 @@ input {
 
 .defender-adjust-readout strong {
   color: #fff;
-  font-size: clamp(1.1rem, 2.6vw, 1.7rem);
+  font-size: clamp(1rem, 34cqh, 2.5rem);
   font-weight: 1000;
   letter-spacing: -0.06em;
   line-height: 1;
@@ -369,7 +368,7 @@ input {
 
 .stat-card span {
   color: #94a3b8;
-  font-size: 0.66rem;
+  font-size: clamp(0.58rem, 15cqh, 1.05rem);
   font-weight: 900;
   letter-spacing: 0.1em;
   line-height: 1;
@@ -381,11 +380,25 @@ input {
   min-width: 0;
   overflow: hidden;
   color: #fff;
-  font-size: clamp(1.15rem, 3vw, 2rem);
+  font-size: clamp(1rem, 34cqh, 3.25rem);
   font-weight: 1000;
   letter-spacing: -0.06em;
   line-height: 1;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.stat-card small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: rgba(203, 213, 225, 0.76);
+  font-size: clamp(0.44rem, 10cqh, 0.82rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -452,7 +465,7 @@ input {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
   color: white;
-  font-size: 0.88rem;
+  font-size: clamp(0.78rem, 28cqh, 1.5rem);
   font-weight: 900;
   transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
   touch-action: manipulation;
@@ -652,6 +665,7 @@ input {
 }
 
 .combat-chip {
+  container-type: size;
   position: relative;
   overflow: hidden;
   display: grid;
@@ -659,7 +673,7 @@ input {
   place-items: center;
   gap: 0.2rem;
   text-align: center;
-  min-height: 2.8rem;
+  min-height: 3.35rem;
   border: 1px solid var(--stroke);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.06);
@@ -687,7 +701,8 @@ input {
 .combat-chip strong {
   justify-self: center;
   align-self: center;
-  font-size: clamp(2rem, 6vw, 3.65rem);
+  transform: translateX(-0.42rem);
+  font-size: clamp(2.15rem, 58cqh, 4.25rem);
   font-weight: 1000;
   letter-spacing: -0.06em;
   line-height: 1;
@@ -902,12 +917,12 @@ input {
   }
 
   .stat-card span {
-    font-size: 0.5rem;
+    font-size: clamp(0.5rem, 14cqh, 0.95rem);
     letter-spacing: 0.07em;
   }
 
   .stat-card strong {
-    font-size: clamp(0.92rem, 4vw, 1.42rem);
+    font-size: clamp(0.92rem, 32cqh, 2.35rem);
   }
 
   .stat-accordion.open .accordion-body {
@@ -925,7 +940,7 @@ input {
     min-height: 0;
     padding: 0.22rem 0.32rem;
     border-radius: 0.65rem;
-    font-size: 0.76rem;
+    font-size: clamp(0.72rem, 26cqh, 1.28rem);
   }
 
   .max-life-input {
@@ -945,7 +960,7 @@ input {
 
   .block-btn {
     min-height: 0;
-    font-size: 0.64rem;
+    font-size: clamp(0.62rem, 24cqh, 1.15rem);
     letter-spacing: 0.025em;
   }
 
@@ -959,7 +974,7 @@ input {
       "p2 actions p1"
       "brand brand brand";
     gap: 0.22rem 0.28rem;
-    max-height: 18dvh;
+    max-height: 21dvh;
     padding: 0.25rem 0.35rem;
     border-radius: 0.82rem;
   }
@@ -985,7 +1000,7 @@ input {
   }
 
   .combat-chip {
-    min-height: 2.08rem;
+    min-height: 2.45rem;
     border-radius: 0.7rem;
     gap: 0.18rem;
   }
@@ -995,7 +1010,7 @@ input {
   }
 
   .combat-chip strong {
-    font-size: clamp(1.45rem, 6.8vw, 2.25rem);
+    font-size: clamp(1.6rem, 56cqh, 2.75rem);
   }
 
   .center-actions {
@@ -1057,11 +1072,11 @@ input {
   }
 
   .stat-card span {
-    font-size: 0.46rem;
+    font-size: clamp(0.44rem, 13cqh, 0.82rem);
   }
 
   .stat-card strong {
-    font-size: 0.92rem;
+    font-size: clamp(0.84rem, 30cqh, 1.85rem);
   }
 
   .stat-accordion.open .accordion-body {
@@ -1073,7 +1088,7 @@ input {
   .max-life-input,
   button {
     min-height: 0;
-    font-size: 0.68rem;
+    font-size: clamp(0.64rem, 24cqh, 1.08rem);
   }
 
   .max-life-input {
@@ -1090,7 +1105,7 @@ input {
   }
 
   .combat-chip {
-    min-height: 1.75rem;
+    min-height: 2.05rem;
   }
 
   .center-actions .btn {
@@ -1120,8 +1135,26 @@ input {
   backdrop-filter: blur(10px);
 }
 
+
+.block-modal.max-life-p2 .block-modal-card {
+  transform: rotate(180deg);
+}
+
+.max-life-popup-controls {
+  min-height: 4rem;
+}
+
+.max-life-popup-controls .max-life-input,
+.max-life-popup-controls .set-btn {
+  font-size: clamp(1.15rem, 6vw, 2rem);
+}
+
 .block-modal.defender-p2 .block-modal-card {
   transform: rotate(180deg);
+}
+
+.block-modal-card.max-life-modal-card {
+  width: min(100%, 22rem);
 }
 
 .block-modal-card {
