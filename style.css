@@ -474,6 +474,16 @@ input {
   transform: translateY(1px) scale(0.985);
 }
 
+
+.location-row .control-strip {
+  height: 100%;
+}
+
+.location-row .location-btn {
+  height: 100%;
+  min-height: 0;
+}
+
 .control-btn.location-btn {
   position: relative;
   overflow: hidden;
@@ -670,7 +680,7 @@ input {
   place-items: center;
   gap: 0.2rem;
   text-align: center;
-  min-height: 4.15rem;
+  min-height: 4.75rem;
   border: 1px solid var(--stroke);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.06);
@@ -799,8 +809,19 @@ input {
 
 .center-actions {
   grid-area: actions;
-  grid-template-columns: auto auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-self: stretch;
   justify-content: center;
+  height: 100%;
+  min-height: 3.2rem;
+}
+
+.center-actions .btn {
+  height: 100%;
+  min-height: 3.2rem;
+  padding-inline: clamp(0.65rem, 2vw, 1.2rem);
+  font-size: clamp(0.78rem, 1.8vw, 1.05rem);
+  font-weight: 1000;
 }
 
 .combat-bar.attacker-p2 .brand-line,
@@ -964,6 +985,7 @@ input {
     height: 100%;
   }
 
+
   .control-btn.location-btn {
     color: transparent;
     font-size: 0;
@@ -991,7 +1013,7 @@ input {
       "p2 actions p1"
       "brand brand brand";
     gap: 0.22rem 0.28rem;
-    max-height: 28dvh;
+    max-height: 34dvh;
     padding: 0.25rem 0.35rem;
     border-radius: 0.82rem;
   }
@@ -1017,7 +1039,7 @@ input {
   }
 
   .combat-chip {
-    min-height: 3.15rem;
+    min-height: 3.65rem;
     border-radius: 0.7rem;
     gap: 0.18rem;
   }
@@ -1031,14 +1053,15 @@ input {
   }
 
   .center-actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100%;
   }
 
   .center-actions .btn {
-    min-height: 1.65rem;
-    height: 1.65rem;
+    min-height: 100%;
+    height: 100%;
     padding: 0 0.42rem;
-    font-size: 0.65rem;
+    font-size: clamp(0.7rem, 2.6vw, 0.88rem);
   }
 }
 
@@ -1122,13 +1145,13 @@ input {
   }
 
   .combat-chip {
-    min-height: 2.65rem;
+    min-height: 3rem;
   }
 
   .center-actions .btn {
-    min-height: 1.45rem;
-    height: 1.45rem;
-    font-size: 0.58rem;
+    min-height: 100%;
+    height: 100%;
+    font-size: 0.62rem;
   }
 }
 
@@ -1222,6 +1245,21 @@ input {
 
 .block-modal.defender-p2 .block-modal-card {
   transform: rotate(180deg);
+}
+
+
+.block-modal-card.reset-modal-card {
+  width: min(100%, 24rem);
+}
+
+.reset-actions {
+  min-height: 3.8rem;
+}
+
+.reset-actions .btn {
+  min-height: 3.8rem;
+  font-size: clamp(0.9rem, 3vw, 1.2rem);
+  font-weight: 1000;
 }
 
 .block-modal-card.max-life-modal-card {

@@ -16,6 +16,7 @@ const uiState = {
   pendingBlock: null,
   maxLifePlayerId: null,
   continuousPopup: null,
+  confirmReset: false,
   lifePressTimer: null,
   attackPressTimer: null,
   suppressNextLifeClick: false,
@@ -24,7 +25,7 @@ const uiState = {
   attackTap: { key: null, count: 0, timer: null, pointerSide: "right" }
 };
 
-const controlNames = ["life", "counter", "location"];
+const controlNames = ["life", "counter"];
 const locationLabels = { high: "High", mid: "Mid", low: "Low" };
 const blockTable = {
   high: { high: "full", mid: "half", low: "none" },
@@ -206,7 +207,7 @@ function renderPlayer(playerId) {
 
   content.innerHTML = `
     <div class="controls-stack">
-      ${statAccordion(playerId, "life", "Life", `${player.life} / ${player.maxLife}`, lifeControls(), "Hold or double-tap Life to set max health")}
+      ${statAccordion(playerId, "life", "Life", `${player.life} / ${player.maxLife}`, lifeControls())}
       ${statAccordion(playerId, "counter", "Counter", player.counter, stepperControls("counter-dec", "counter-inc", "Counter"))}
       ${isAttacker ? attackerPanel(playerId) : defenderPanel()}
     </div>
@@ -216,9 +217,11 @@ function renderPlayer(playerId) {
   playerMounts[playerId].appendChild(fragment);
 }
 
-function attackerPanel(playerId) {
+function attackerPanel() {
   return `
-    ${statAccordion(playerId, "location", "Location", locationLabels[state.attack.location], locationControls())}
+    <div class="control-row location-row" aria-label="Attack location controls">
+      ${locationControls()}
+    </div>
   `;
 }
 
@@ -345,9 +348,32 @@ function renderContinuousModal() {
   return true;
 }
 
+function renderResetModal() {
+  if (!uiState.confirmReset) return false;
+
+  blockModal.classList.remove("hidden");
+  blockModal.classList.remove("defender-p1", "defender-p2", "max-life-p1", "max-life-p2", "continuous-p1", "continuous-p2");
+  blockModal.innerHTML = `
+    <div class="block-modal-backdrop" data-action="close-reset-modal"></div>
+    <div class="block-modal-card reset-modal-card glass-card" role="dialog" aria-modal="true" aria-label="Confirm reset game">
+      <header class="block-modal-header">
+        <span>Reset game?</span>
+        <button class="btn btn-xs btn-ghost" data-action="close-reset-modal" aria-label="Cancel reset">✕</button>
+      </header>
+      <p class="block-modal-copy">Restore life, clear counters and attack values, then randomize who attacks first.</p>
+      <div class="block-result-actions reset-actions">
+        <button class="btn btn-error" data-action="confirm-reset-game">Reset</button>
+        <button class="btn btn-ghost" data-action="close-reset-modal">Cancel</button>
+      </div>
+    </div>
+  `;
+  return true;
+}
+
 function renderBlockModal() {
   if (renderMaxLifeModal()) return;
   if (renderContinuousModal()) return;
+  if (renderResetModal()) return;
 
   blockModal.classList.toggle("defender-p2", getDefenderId() === "p2");
   blockModal.classList.toggle("defender-p1", getDefenderId() === "p1");
@@ -440,6 +466,7 @@ function closeAllControls() {
   uiState.pendingBlock = null;
   uiState.maxLifePlayerId = null;
   uiState.continuousPopup = null;
+  uiState.confirmReset = false;
 }
 
 function closePlayerControls(playerId) {
@@ -492,8 +519,10 @@ function handleAction(action, element) {
     "close-block-modal": closeBlockModal,
     "close-max-life-modal": closeMaxLifeModal,
     "close-continuous-modal": closeContinuousModal,
+    "close-reset-modal": closeResetModal,
+    "confirm-reset-game": resetGame,
     "end-turn": endTurn,
-    "reset-game": resetGame
+    "reset-game": openResetModal
   };
 
   actions[action]?.();
@@ -625,6 +654,17 @@ function endTurn() {
   });
 }
 
+function openResetModal() {
+  closeAllControls();
+  uiState.confirmReset = true;
+  renderBlockModal();
+}
+
+function closeResetModal() {
+  uiState.confirmReset = false;
+  renderBlockModal();
+}
+
 function resetGame() {
   closeAllControls();
   updateState((nextState) => {
@@ -635,7 +675,7 @@ function resetGame() {
     resetAttackValues(nextState);
     nextState.continuous.damageBonus = 0;
     nextState.continuous.speedBonus = 0;
-    nextState.turnPlayer = "p1";
+    nextState.turnPlayer = Math.random() < 0.5 ? "p1" : "p2";
     nextState.meta.lastDamage = null;
     nextState.meta.lastHitPlayer = null;
   });
@@ -761,8 +801,13 @@ function applyQueuedAttackTap() {
   const stateKey = getAttackStateKey(stat);
   if (!stateKey) return;
 
-  const delta = count >= 3 ? -1 : count === 2 ? 1 : pointerSide === "left" ? -1 : 1;
-  changeAttackValue(stateKey, delta);
+  if (count >= 2) {
+    const continuousKey = stat === "damage" ? "damageBonus" : "speedBonus";
+    changeContinuousValue(continuousKey, count >= 3 ? -1 : 1);
+    return;
+  }
+
+  changeAttackValue(stateKey, pointerSide === "left" ? -1 : 1);
 }
 
 // ---------- Event delegation ----------
@@ -874,6 +919,10 @@ document.addEventListener("keydown", (event) => {
 
   if (event.key === "Escape" && uiState.continuousPopup) {
     closeContinuousModal();
+  }
+
+  if (event.key === "Escape" && uiState.confirmReset) {
+    closeResetModal();
   }
 });
 
