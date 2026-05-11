@@ -15,6 +15,7 @@ const uiState = {
   expandedRowId: null,
   pendingBlock: null,
   maxLifePlayerId: null,
+  maxLifeDraft: null,
   continuousPopup: null,
   confirmReset: false,
   lifePressTimer: null,
@@ -319,6 +320,9 @@ function renderMaxLifeModal() {
 
   if (!player) return false;
 
+  const draftMaxLife = clampNumber(uiState.maxLifeDraft ?? player.maxLife, 1, 999);
+  uiState.maxLifeDraft = draftMaxLife;
+
   blockModal.classList.remove("hidden");
   blockModal.classList.toggle("max-life-p2", playerId === "p2");
   blockModal.classList.toggle("max-life-p1", playerId === "p1");
@@ -331,17 +335,20 @@ function renderMaxLifeModal() {
         <button class="btn btn-xs btn-ghost" data-action="close-max-life-modal" aria-label="Cancel max health">✕</button>
       </header>
       <p class="block-modal-copy">Current life: ${player.life} / ${player.maxLife}</p>
-      <div class="control-strip max-life-controls max-life-popup-controls">
-        <input class="input input-bordered input-sm max-life-input" type="number" min="1" max="999" inputmode="numeric" value="${player.maxLife}" aria-label="Max life" />
-        <button class="control-btn set-btn" data-action="set-max-life-popup" data-player="${playerId}">Set</button>
+      <div class="max-life-draft" aria-live="polite">
+        <span>New max</span>
+        <strong>${draftMaxLife}</strong>
       </div>
+      <div class="control-strip max-life-controls max-life-popup-controls">
+        <button class="control-btn" data-action="max-life-popup-dec" type="button" aria-label="Decrease max life">−1</button>
+        <button class="control-btn" data-action="max-life-popup-inc" type="button" aria-label="Increase max life">+1</button>
+      </div>
+      <button class="control-btn set-btn max-life-set-btn" data-action="set-max-life-popup" data-player="${playerId}" type="button">Set</button>
     </div>
   `;
 
   requestAnimationFrame(() => {
-    const input = blockModal.querySelector(".max-life-input");
-    input?.focus();
-    input?.select();
+    blockModal.querySelector(".max-life-set-btn")?.focus();
   });
 
   return true;
@@ -496,6 +503,7 @@ function closeAllControls() {
   uiState.expandedRowId = null;
   uiState.pendingBlock = null;
   uiState.maxLifePlayerId = null;
+  uiState.maxLifeDraft = null;
   uiState.continuousPopup = null;
   uiState.confirmReset = false;
 }
@@ -517,7 +525,9 @@ function handleAction(action, element) {
     "life-dec": () => changePlayerValue(playerId, "life", -1, 0, 999),
     "counter-inc": () => changePlayerValue(playerId, "counter", 1, -999, 999),
     "counter-dec": () => changePlayerValue(playerId, "counter", -1, -999, 999),
-    "set-max-life-popup": () => setMaxLifeFromPopup(element.dataset.player, element),
+    "max-life-popup-inc": () => changeMaxLifeDraft(1),
+    "max-life-popup-dec": () => changeMaxLifeDraft(-1),
+    "set-max-life-popup": () => setMaxLifeFromPopup(element.dataset.player),
     "base-damage-inc": () => changeAttackValue("baseDamage", 1),
     "base-damage-dec": () => changeAttackValue("baseDamage", -1),
     "base-speed-inc": () => changeAttackValue("baseSpeed", 1),
@@ -554,12 +564,19 @@ function changePlayerValue(playerId, key, delta, min, max) {
   });
 }
 
-function setMaxLifeFromPopup(playerId, element) {
+function changeMaxLifeDraft(delta) {
+  const player = state.players[uiState.maxLifePlayerId];
+  if (!player) return;
+  uiState.maxLifeDraft = clampNumber((uiState.maxLifeDraft ?? player.maxLife) + delta, 1, 999);
+  renderBlockModal();
+}
+
+function setMaxLifeFromPopup(playerId) {
   if (!playerId) return;
-  const input = element.closest(".max-life-modal-card").querySelector(".max-life-input");
-  const maxLife = clampNumber(input.value, 1, 999);
+  const maxLife = clampNumber(uiState.maxLifeDraft, 1, 999);
 
   uiState.maxLifePlayerId = null;
+  uiState.maxLifeDraft = null;
   updateState((nextState) => {
     nextState.players[playerId].maxLife = maxLife;
     nextState.players[playerId].life = maxLife;
@@ -617,11 +634,13 @@ function openMaxLifeModal(playerId) {
   if (!state.players[playerId]) return;
   closeAllControls();
   uiState.maxLifePlayerId = playerId;
+  uiState.maxLifeDraft = state.players[playerId].maxLife;
   renderBlockModal();
 }
 
 function closeMaxLifeModal() {
   uiState.maxLifePlayerId = null;
+  uiState.maxLifeDraft = null;
   renderBlockModal();
 }
 
@@ -919,8 +938,14 @@ document.addEventListener("dblclick", (event) => {
 
 document.addEventListener("click", (event) => {
   const actionable = event.target.closest("[data-action]");
-  if (!actionable) return;
-  handleAction(actionable.dataset.action, actionable);
+  if (actionable) {
+    handleAction(actionable.dataset.action, actionable);
+    return;
+  }
+
+  if (uiState.maxLifePlayerId && event.target.closest(".max-life-modal-card")) {
+    closeMaxLifeModal();
+  }
 });
 
 document.addEventListener("input", (event) => {
@@ -958,11 +983,6 @@ document.addEventListener("change", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && event.target.matches(".player-name")) {
     event.target.blur();
-  }
-
-  if (event.key === "Enter" && event.target.matches(".max-life-modal-card .max-life-input")) {
-    const button = event.target.closest(".max-life-modal-card")?.querySelector('[data-action="set-max-life-popup"]');
-    button?.click();
   }
 
   if (event.key === "Escape" && uiState.maxLifePlayerId) {
