@@ -56,7 +56,9 @@ const blockModal = document.querySelector("#block-modal");
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return sanitizeState({ ...structuredClone(defaultState), ...saved });
+    const loadedState = sanitizeState({ ...structuredClone(defaultState), ...saved });
+    resetProgressiveDifficulty(loadedState);
+    return loadedState;
   } catch {
     return structuredClone(defaultState);
   }
@@ -151,6 +153,12 @@ function resetAttackValues(nextState) {
   nextState.attack.baseSpeed = 3;
   nextState.attack.location = "mid";
   nextState.attack.throw = false;
+}
+
+function resetProgressiveDifficulty(nextState) {
+  ["p1", "p2"].forEach((playerId) => {
+    nextState.players[playerId].progressiveDifficulty = 0;
+  });
 }
 
 // ---------- Rendering ----------
@@ -724,9 +732,7 @@ function endTurn() {
     resetAttackValues(nextState);
     nextState.continuous.damageBonus = 0;
     nextState.continuous.speedBonus = 0;
-    ["p1", "p2"].forEach((playerId) => {
-      nextState.players[playerId].progressiveDifficulty = 0;
-    });
+    resetProgressiveDifficulty(nextState);
     nextState.turnPlayer = nextState.turnPlayer === "p1" ? "p2" : "p1";
     nextState.meta.lastDamage = null;
   });
@@ -749,8 +755,8 @@ function resetGame() {
     ["p1", "p2"].forEach((playerId) => {
       nextState.players[playerId].life = nextState.players[playerId].maxLife;
       nextState.players[playerId].counter = 0;
-      nextState.players[playerId].progressiveDifficulty = 0;
     });
+    resetProgressiveDifficulty(nextState);
     resetAttackValues(nextState);
     nextState.continuous.damageBonus = 0;
     nextState.continuous.speedBonus = 0;
