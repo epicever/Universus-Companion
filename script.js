@@ -875,6 +875,17 @@ function applyAttackChipTap(info) {
 }
 
 // ---------- Event delegation ----------
+
+document.addEventListener("selectstart", (event) => {
+  if (event.target.closest?.("input, textarea")) return;
+  event.preventDefault();
+});
+
+document.addEventListener("contextmenu", (event) => {
+  if (event.target.closest?.("input, textarea")) return;
+  event.preventDefault();
+});
+
 document.addEventListener("pointerdown", (event) => {
   const attackInfo = getAttackChipInfo(event.target, event);
   if (attackInfo) {
